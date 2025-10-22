@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- الاسم الجديد والوصف لـ SEO -->
+    <title>AetherScan | درع الرابط</title>
+    <meta name="description" content="فاحص روابط فوري وسريع. تحقق من أمان أي رابط، واكتشف الروابط المشبوهة أو الخطيرة قبل النقر عليها.">
+    <meta name="keywords" content="فحص روابط, فاحص أمان, درع الرابط, روابط مشبوهة, رابط آمن, فحص URL, AetherScan, Link Shield">
+    
+    <!-- تحميل Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- إعداد خط Inter الافتراضي -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* لإخفاء الزر مؤقتاً في حالة كان الحقل فارغاً */
+        .clear-button.hidden {
+            display: none;
+        }
+    </style>
+    <!-- أيقونات Lucide (بديل لـ FontAwesome) -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body class="p-4 sm:p-8 min-h-screen flex items-start justify-center">
+
+    <!-- الحاوية الرئيسية والمحاذاة -->
+    <div class="w-full max-w-sm bg-white p-6 rounded-3xl shadow-2xl border border-gray-100 mt-10">
+        
+        <!-- العنوان الرئيسي والوصف -->
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-extrabold text-gray-900 mb-2">
+                درع الرابط
+            </h1>
+            <p class="text-gray-500 text-sm font-medium">
+                تحقق من أمان أي رابط قبل فتحه
+            </p>
+        </header>
+
+        <!-- حقل الإدخال مع زر الحذف (Clear Button) -->
+        <div class="mb-6 relative">
+            <input type="url" id="urlInput" placeholder="https://link-to-check.com"
+                   oninput="toggleClearButton()"
+                   class="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-150 text-left placeholder:text-gray-400 pr-12"
+                   value="" dir="ltr">
+            
+            <!-- زر الحذف ❌ -->
+            <button id="clearButton" onclick="clearUrlInput()" 
+                    class="clear-button hidden absolute left-3 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition duration-150"
+                    aria-label="مسح حقل الرابط">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- زر الفحص -->
+        <button onclick="checkLink()"
+                id="checkButton"
+                class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200 transform hover:scale-[1.01] transition duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-500 focus:ring-opacity-50 flex items-center justify-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+            <span>فحص الرابط</span>
+        </button>
+
+        <!-- منطقة عرض النتيجة - مشابهة للصورة -->
+        <div id="resultBox" class="mt-8 p-6 rounded-2xl border-4 hidden transition-all duration-300">
+            <div class="flex flex-col items-center justify-center space-y-4">
+                
+                <!-- أيقونة الحماية (Security/Shield Icon) -->
+                <div id="statusIcon" class="p-3 rounded-full">
+                    <!-- الأيقونة سيتم تعيينها ديناميكياً -->
+                </div>
+                
+                <!-- حالة الأمان الكبيرة (آمن/خطير) -->
+                <p id="securityStatus" class="text-2xl font-extrabold"></p>
+
+                <!-- عرض الرابط الذي تم فحصه -->
+                <div class="w-full text-center p-3 border border-dashed rounded-lg bg-white">
+                    <p id="checkedUrlDisplay" class="text-sm font-semibold text-gray-600 break-words"></p>
+                </div>
+                
+                <!-- تفاصيل إضافية (البروتوكول والنطاق) -->
+                <div class="w-full pt-3 border-t border-gray-200 grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <p class="text-gray-400">البروتوكول:</p>
+                        <p id="protocolDisplay" class="font-bold"></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400">النطاق:</p>
+                        <p id="domainDisplay" class="font-bold text-left break-words" dir="ltr"></p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // تهيئة أيقونات Lucide (لتظهر الأيقونات بعد تحميل الصفحة)
+        document.addEventListener('DOMContentLoaded', (event) => {
+            lucide.createIcons();
+            // تأكد من تشغيل دالة الإظهار/الإخفاء عند التحميل
+            toggleClearButton(); 
+        });
+
+        // =================================================================
+        // الدوال الجديدة لإدارة زر الحذف
+        // =================================================================
+        
+        // الدالة التي تتحقق من وجود نص لإظهار أو إخفاء زر الحذف
+        function toggleClearButton() {
+            const urlInput = document.getElementById('urlInput');
+            const clearButton = document.getElementById('clearButton');
+            
+            if (urlInput.value.length > 0) {
+                clearButton.classList.remove('hidden');
+            } else {
+                clearButton.classList.add('hidden');
+            }
+        }
+
+        // الدالة التي تحذف النص من الحقل وتخفي صندوق النتيجة
+        function clearUrlInput() {
+            const urlInput = document.getElementById('urlInput');
+            const resultBox = document.getElementById('resultBox');
+            
+            urlInput.value = ''; // حذف الرابط بالكامل
+            resultBox.classList.add('hidden'); // إخفاء صندوق النتيجة القديمة
+            toggleClearButton(); // إخفاء زر الحذف
+        }
+        
+        // =================================================================
+        // دالة محاكاة فحص سلامة الرابط (Simulated Check)
+        // =================================================================
+        function checkUrlSafety(url) {
+            // الأنماط التي تعتبر خطيرة لأغراض الاختبار (Simulated Malicious Patterns)
+            const maliciousPatterns = [
+                /malware/i,
+                /phish/i,
+                /virus-download/i,
+                /login-verify-\d+/i,
+                /fakebank/i
+            ];
+
+            try {
+                const urlObject = new URL(url);
+                
+                // 1. فحص الأنماط المشبوهة
+                if (maliciousPatterns.some(pattern => pattern.test(url))) {
+                    return { 
+                        isSafe: false, 
+                        statusText: 'خطير',
+                        protocol: urlObject.protocol.replace(':', '').toUpperCase(),
+                        domain: urlObject.hostname
+                    };
+                }
+
+                // 2. مثال على روابط آمنة معروفة (Simulated Safe List)
+                if (urlObject.hostname.includes('google.com') || urlObject.hostname.includes('microsoft.com') || urlObject.hostname.includes('apple.com')) {
+                    return { 
+                        isSafe: true, 
+                        statusText: 'آمن',
+                        protocol: urlObject.protocol.replace(':', '').toUpperCase(),
+                        domain: urlObject.hostname
+                    };
+                }
+
+                // 3. الفحص الافتراضي (إذا لم يكن خطيراً ولم يكن معروفا كآمن)
+                return { 
+                    isSafe: true, 
+                    statusText: 'آمن',
+                    protocol: urlObject.protocol.replace(':', '').toUpperCase(),
+                    domain: urlObject.hostname
+                };
+
+            } catch (e) {
+                // حالة فشل تحليل الرابط (صيغة خاطئة)
+                return { 
+                    isSafe: false, 
+                    statusText: 'خطأ',
+                    protocol: 'N/A',
+                    domain: 'N/A' 
+                };
+            }
+        }
+
+        // =================================================================
+        // دالة تحديث واجهة المستخدم بالنتائج
+        // =================================================================
+        function checkLink() {
+            const urlInput = document.getElementById('urlInput');
+            const resultBox = document.getElementById('resultBox');
+            const securityStatus = document.getElementById('securityStatus');
+            const statusIcon = document.getElementById('statusIcon');
+            const checkedUrlDisplay = document.getElementById('checkedUrlDisplay');
+            const protocolDisplay = document.getElementById('protocolDisplay');
+            const domainDisplay = document.getElementById('domainDisplay');
+            const checkButton = document.getElementById('checkButton');
+            
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                // إظهار تنبيه إذا كان الحقل فارغاً
+                resultBox.classList.remove('hidden');
+                resultBox.className = 'mt-8 p-6 rounded-2xl border-4 transition-all duration-300 border-yellow-400 bg-yellow-50';
+                securityStatus.className = 'text-2xl font-extrabold text-yellow-800';
+                securityStatus.textContent = 'تنبيه';
+                
+                statusIcon.innerHTML = <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+                statusIcon.className = 'p-3 rounded-full bg-yellow-100';
+
+                checkedUrlDisplay.textContent = 'الرجاء إدخال رابط للتحقق.';
+                protocolDisplay.textContent = 'N/A';
+                domainDisplay.textContent = 'N/A';
+                return;
+            }
+
+            // تفعيل حالة التحميل
+            checkButton.textContent = '... جاري الفحص';
+            checkButton.disabled = true;
+
+            // محاكاة تأخير بسيط للتحميل (لإظهار تجربة أفضل)
+            setTimeout(() => {
+                const result = checkUrlSafety(url);
+
+                // إعادة تفعيل الزر
+                checkButton.innerHTML = <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg> <span>فحص الرابط</span>;
+                checkButton.disabled = false;
+
+                // إزالة فئات CSS السابقة
+                resultBox.classList.remove('hidden', 'border-emerald-500', 'bg-emerald-50', 'border-red-500', 'bg-red-50', 'border-yellow-400', 'bg-yellow-50');
+                securityStatus.className = 'text-2xl font-extrabold';
+                statusIcon.innerHTML = '';
+
+
+                // تحديث واجهة المستخدم بالنتيجة
+                if (result.isSafe && result.statusText !== 'خطأ') {
+                    // اللون الأخضر للرابط الآمن
+                    resultBox.classList.add('border-emerald-500', 'bg-emerald-50');
+                    securityStatus.classList.add('text-emerald-700');
+                    statusIcon.innerHTML = <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>; // أيقونة درع مع علامة صح
+                    statusIcon.classList.add('bg-emerald-100');
+                    protocolDisplay.classList.add('text-emerald-600');
+                    domainDisplay.classList.add('text-emerald-600');
+
+                } else {
+                    // اللون الأحمر للرابط الخطير أو غير الصحيح
+                    resultBox.classList.add('border-red-500', 'bg-red-50');
+                    securityStatus.classList.add('text-red-700');
+                    statusIcon.innerHTML = <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><path d="m19 14-4 4-1-1"/><path d="M5 20v-4"/><path d="M9 18h6"/><path d="M11 6h2"/><path d="M22 10a8 8 0 0 1-8 8"/><path d="M22 4 12 14"/><path d="M17 12a3 3 0 0 0-3-3H9a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h5"/></svg>; // أيقونة تحذير
+                    statusIcon.classList.add('bg-red-100');
+                    protocolDisplay.classList.add('text-red-600');
+                    domainDisplay.classList.add('text-red-600');
+                }
+
+                // عرض النصوص
+                securityStatus.textContent = result.statusText;
+                checkedUrlDisplay.textContent = url; // عرض الرابط الأصلي
+                protocolDisplay.textContent = result.protocol;
+                domainDisplay.textContent = result.domain;
+                
+                resultBox.classList.remove('hidden');
+
+            }, 500); // تأخير نصف ثانية للمحاكاة
+        }
+    </script>
+</body>
+</html>
