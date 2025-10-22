@@ -106,8 +106,9 @@
             const sourceList = document.getElementById('source-list');
 
             // مفتاح API، يرجى تركه فارغاً. سيتم توفيره تلقائياً في بيئة كانفاس
-            // *ملاحظة مهمة:* يجب أن يبقى apiKey = "" لكي يتم تزويده تلقائياً أثناء التشغيل.
+            // ملاحظة مهمة: يجب أن يبقى apiKey = "" لكي يتم تزويده تلقائياً أثناء التشغيل.
             const apiKey = "";
+            // *التصحيح رقم 1: بناء رابط API بشكل صحيح باستخدام Template Literal*
             const apiUrl = https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey};
 
             // 2. وظيفة إخفاء/إظهار لوحة النتائج
@@ -163,6 +164,7 @@
                     sourceDisplay.classList.remove('hidden');
                     sources.forEach(source => {
                         const li = document.createElement('li');
+                        // يجب استخدام علامات التنصيص العادية أو الـ Template literal هنا أيضاً
                         li.innerHTML = <a href="${source.uri}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${source.title}</a>;
                         sourceList.appendChild(li);
                     });
@@ -172,6 +174,7 @@
             };
 
             // 4. وظيفة فحص أمان الرابط
+            // *التصحيح رقم 2: دمج آلية Exponential Backoff لإدارة أخطاء الاتصال*
             async function checkLinkSecurity(url) {
                 if (!url.trim()) {
                     displayResult(null, "الرجاء إدخال رابط للتحقق.", []);
@@ -197,57 +200,77 @@
                     },
                 };
 
-                let response;
-                try {
-                    response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+                const MAX_RETRIES = 5;
+                for (let i = 0; i < MAX_RETRIES; i++) {
+                    let response;
+                    try {
+                        response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
 
-                    if (!response.ok) {
-                        throw new Error(HTTP error! status: ${response.status});
-                    }
-
-                    const result = await response.json();
-                    const candidate = result.candidates?.[0];
-
-                    let text = "تعذر الحصول على نتيجة الفحص.";
-                    let sources = [];
-                    let isSafe = null;
-
-                    if (candidate && candidate.content?.parts?.[0]?.text) {
-                        text = candidate.content.parts[0].text;
-
-                        // استخراج حالة الأمان التقديرية من الرد (تخمين بناءً على الكلمات المفتاحية)
-                        const lowerText = text.toLowerCase();
-                        if (lowerText.includes('malicious') || lowerText.includes('phishing') || lowerText.includes('danger') || lowerText.includes('خطر') || lowerText.includes('مشبوة') || lowerText.includes('احتيال')) {
-                            isSafe = false;
-                        } else if (lowerText.includes('safe') || lowerText.includes('legitimate') || lowerText.includes('آمنة') || lowerText.includes('موثوقة')) {
-                            isSafe = true;
-                        } else {
-                            isSafe = null; // حالة محايدة/تحذير
+                        if (response.status === 429 || response.status >= 500) {
+                            // إذا كان الخطأ بسبب الضغط (429) أو خطأ في الخادم (5xx)، نقوم بإعادة المحاولة
+                            if (i < MAX_RETRIES - 1) {
+                                const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                                continue;
+                            } else {
+                                throw new Error(API failed after ${MAX_RETRIES} retries with status: ${response.status});
+                            }
                         }
 
+                        if (!response.ok) {
+                            throw new Error(HTTP error! status: ${response.status});
+                        }
 
-                        // استخراج المصادر
-                        const groundingMetadata = candidate.groundingMetadata;
-                        if (groundingMetadata && groundingMetadata.groundingAttributions) {
-                            sources = groundingMetadata.groundingAttributions
-                                .map(attribution => ({
-                                    uri: attribution.web?.uri,
-                                    title: attribution.web?.title,
-                                }))
-                                .filter(source => source.uri && source.title);
+                        const result = await response.json();
+                        const candidate = result.candidates?.[0];
+
+                        let text = "تعذر الحصول على نتيجة الفحص.";
+                        let sources = [];
+                        let isSafe = null;
+
+                        if (candidate && candidate.content?.parts?.[0]?.text) {
+                            text = candidate.content.parts[0].text;
+
+                            // استخراج حالة الأمان التقديرية من الرد (تخمين بناءً على الكلمات المفتاحية)
+                            const lowerText = text.toLowerCase();
+                            if (lowerText.includes('malicious') || lowerText.includes('phishing') || lowerText.includes('danger') || lowerText.includes('خطر') || lowerText.includes('مشبوة') || lowerText.includes('احتيال')) {
+                                isSafe = false;
+                            } else if (lowerText.includes('safe') || lowerText.includes('legitimate') || lowerText.includes('آمنة') || lowerText.includes('موثوقة')) {
+                                isSafe = true;
+                            } else {
+                                isSafe = null; // حالة محايدة/تحذير
+                            }
+
+
+                            // استخراج المصادر
+                            const groundingMetadata = candidate.groundingMetadata;
+                            if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                                sources = groundingMetadata.groundingAttributions
+                                    .map(attribution => ({
+                                        uri: attribution.web?.uri,
+                                        title: attribution.web?.title,
+                                    }))
+                                    .filter(source => source.uri && source.title);
+                            }
+                        }
+
+                        displayResult(isSafe, text, sources);
+                        return; // الخروج من الوظيفة عند النجاح
+
+                    } catch (error) {
+                        console.error("Gemini API Error:", error);
+                        if (i === MAX_RETRIES - 1) {
+                             displayResult(false, "حدث خطأ أثناء الاتصال بخدمة فحص الأمان بشكل متكرر. (الرجاء المحاولة لاحقاً).", []);
                         }
                     }
-
-                    displayResult(isSafe, text, sources);
-
-                } catch (error) {
-                    console.error("Gemini API Error:", error);
-                    displayResult(false, "حدث خطأ أثناء الاتصال بخدمة فحص الأمان. (قد تكون المشكلة في الاتصال بالشبكة أو إعدادات الأمان).", []);
                 }
+
+                 // في حال الخروج من الحلقة دون نجاح
+                 displayResult(false, "حدث خطأ أثناء الاتصال بخدمة فحص الأمان. (قد تكون المشكلة في الاتصال بالشبكة أو إعدادات الأمان).", []);
             }
 
             // 5. ربط الزر بوظيفة الفحص
