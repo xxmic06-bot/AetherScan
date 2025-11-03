@@ -1,289 +1,757 @@
-<!DOCTYPE html>
-    <html lang="ar" dir="rtl">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <!-- عنوان التطبيق -->
-        <title>AetherScan | درع الرابط</title>
-        <!-- SEO الوصف والكلمات المفتاحية -->
-        <meta name="description" content="ملخص روابط قوي وسريع. تحقق من أمان أي رابط، واكتشف الروابط المشبوهة أو الخطيرة قبل النقر عليها. يُقدم بواسطة Gemini.">
-        <meta name="keywords" content="فحص روابط, أمان, درع الرابط, روابط مشبوهة, رابط آمن, فحص URL, AetherScan, Link Shield">
+import { useLinkScanner } from '@/contexts/LinkScannerContext';
+import { SecurityLevel } from '@/types/link';
+import { Shield, ShieldAlert, ShieldCheck, Scan, Copy, ExternalLink, Loader } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Animated,
+  Clipboard,
+  Linking,
+  Alert,
+} from 'react-native';
 
-        <!-- تضمين مكتبة Tailwind CSS -->
-        <script src="https://cdn.tailwindcss.com"></script>
+export default function ScannerScreen() {
+  const [url, setUrl] = useState('');
+  const { currentScan, isScanning, scanLink } = useLinkScanner();
+  const [scaleAnim] = useState(new Animated.Value(1));
 
-        <!-- إعداد خط Inter -->
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-            body {
-                font-family: 'Inter', sans-serif;
-                background-color: #f3f4f6; /* لون خلفية رمادي فاتح */
-            }
-            /* تصميم مخصص للوحة النتائج */
-            #result-box {
-                transition: all 0.3s ease-in-out;
-            }
-        </style>
-    </head>
-    <body class="min-h-screen flex items-center justify-center p-4">
+  const handleScan = async () => {
+    if (!url.trim()) {
+      Alert.alert('خطأ', 'الرجاء إدخال رابط للفحص');
+      return;
+    }
 
-        <!-- حاوية التطبيق الرئيسية -->
-        <div class="w-full max-w-md bg-white rounded-xl shadow-2xl p-6 md:p-8">
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-            <!-- العنوان -->
-            <header class="text-center mb-8">
-                <h1 class="text-4xl font-extrabold text-gray-800 tracking-tight">درع الرابط</h1>
-                <p class="mt-2 text-sm text-gray-500">تحقق من أمان أي رابط قبل فتحه</p>
-            </header>
+    await scanLink(url);
+  };
 
-            <!-- حقل إدخال الرابط والزر -->
-            <div class="space-y-4">
-                <input type="url" id="link-input" placeholder="https://link-to-check.com"
-                       class="w-full p-4 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 transition duration-150 text-left"
-                       value=""
-                       dir="ltr"> <!-- لإجبار كتابة الرابط من اليسار لليمين -->
+  const getSecurityColor = (level: SecurityLevel) => {
+    switch (level) {
+      case 'safe':
+        return '#10B981';
+      case 'warning':
+        return '#F59E0B';
+      case 'danger':
+        return '#EF4444';
+    }
+  };
 
-                <button id="check-button"
-                        class="w-full flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-emerald-500/50 transition duration-300 transform hover:scale-[1.01] active:scale-[0.99] disabled:bg-gray-400 disabled:shadow-none">
-                    <svg id="button-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                    <span id="button-text" class="text-lg">فحص الرابط</span>
-                </button>
-            </div>
+  const getSecurityIcon = (level: SecurityLevel) => {
+    const color = getSecurityColor(level);
+    const size = 48;
+    switch (level) {
+      case 'safe':
+        return <ShieldCheck color={color} size={size} />;
+      case 'warning':
+        return <ShieldAlert color={color} size={size} />;
+      case 'danger':
+        return <Shield color={color} size={size} />;
+    }
+  };
 
-            <!-- لوحة عرض النتائج (مخفية افتراضياً) -->
-            <div id="result-box" class="mt-8 p-6 rounded-xl border-t-4 border-yellow-500 bg-yellow-50 hidden opacity-0" role="alert">
-                <div id="loading-spinner" class="flex items-center justify-center space-x-3 hidden" dir="ltr">
-                    <!-- أيقونة تحميل (دوارة) -->
-                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span class="text-lg text-emerald-600 font-semibold">جاري الفحص...</span>
-                </div>
+  const getSecurityText = (level: SecurityLevel) => {
+    switch (level) {
+      case 'safe':
+        return 'آمن';
+      case 'warning':
+        return 'تحذير';
+      case 'danger':
+        return 'خطر';
+    }
+  };
 
-                <!-- عرض النتائج -->
-                <div id="result-content" class="space-y-4">
-                    <div class="flex items-center space-x-3 space-x-reverse">
-                        <svg id="status-icon" class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.332 16c-.77 1.333.192 3 1.732 3z"></path>
-                        </svg>
-                        <h2 id="status-title" class="text-xl font-bold text-yellow-700">تنبيه</h2>
-                    </div>
-                    <p id="result-message" class="text-gray-700 text-sm leading-relaxed">الرجاء إدخال رابط للتحقق.</p>
-                    <p id="source-display" class="text-xs text-gray-500 hidden pt-2 border-t border-gray-200" dir="ltr">
-                        <span class="font-bold text-gray-600" dir="rtl">المصدر (للتأكد): </span>
-                        <ul id="source-list" class="mt-1 space-y-1"></ul>
-                    </p>
-                </div>
-            </div>
+  const copyToClipboard = () => {
+    if (currentScan) {
+      Clipboard.setString(currentScan.url);
+      Alert.alert('تم النسخ', 'تم نسخ الرابط إلى الحافظة');
+    }
+  };
 
-            <!-- تذييل -->
-            <footer class="mt-8 text-center text-xs text-gray-400">
-                مدعوم بواسطة نموذج الذكاء الاصطناعي Gemini
-            </footer>
+  const openLink = () => {
+    if (currentScan) {
+      if (currentScan.securityLevel === 'danger') {
+        Alert.alert(
+          'تحذير',
+          'هذا الرابط قد يكون خطراً. هل أنت متأكد من فتحه؟',
+          [
+            { text: 'إلغاء', style: 'cancel' },
+            { text: 'فتح', onPress: () => Linking.openURL(currentScan.url) },
+          ]
+        );
+      } else {
+        Linking.openURL(currentScan.url);
+      }
+    }
+  };
 
-        </div>
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View style={styles.iconContainer}>
+            <Shield color="#10B981" size={44} strokeWidth={2.5} />
+          </View>
+          <Text style={styles.title}>فاحص الروابط</Text>
+          <Text style={styles.subtitle}>تحقق من أمان أي رابط قبل فتحه</Text>
+        </View>
 
-        <script>
-            // المتغيرات العالمية المطلوبة لكي يعمل التطبيق في بيئة محاكاة
-            const __app_id = 'AetherScan-App'; // معرف افتراضي للتطبيق
-            const __firebase_config = '{}'; // لا نحتاج فايربيس لهذه الوظيفة
-            const __initial_auth_token = undefined; // لا نحتاج توثيق
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="أدخل الرابط هنا..."
+            placeholderTextColor="#9CA3AF"
+            value={url}
+            onChangeText={setUrl}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            returnKeyType="done"
+            onSubmitEditing={handleScan}
+          />
+        </View>
 
-            // 1. تعريف العناصر الأساسية
-            const linkInput = document.getElementById('link-input');
-            const checkButton = document.getElementById('check-button');
-            const buttonText = document.getElementById('button-text');
-            const resultBox = document.getElementById('result-box');
-            const loadingSpinner = document.getElementById('loading-spinner');
-            const resultContent = document.getElementById('result-content');
-            const statusTitle = document.getElementById('status-title');
-            const resultMessage = document.getElementById('result-message');
-            const statusIcon = document.getElementById('status-icon');
-            const sourceDisplay = document.getElementById('source-display');
-            const sourceList = document.getElementById('source-list');
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+          <TouchableOpacity
+            style={[styles.scanButton, isScanning && styles.scanButtonDisabled]}
+            onPress={handleScan}
+            disabled={isScanning}
+            activeOpacity={0.8}
+          >
+            {isScanning ? (
+              <Loader color="#FFFFFF" size={24} />
+            ) : (
+              <Scan color="#FFFFFF" size={24} />
+            )}
+            <Text style={styles.scanButtonText}>
+              {isScanning ? 'جاري الفحص...' : 'فحص الرابط'}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
 
-            // مفتاح API، يرجى تركه فارغاً. سيتم توفيره تلقائياً في بيئة كانفاس
-            // ملاحظة مهمة: يجب أن يبقى apiKey = "" لكي يتم تزويده تلقائياً أثناء التشغيل.
-            const apiKey = "";
-            // *التصحيح رقم 1: بناء رابط API بشكل صحيح باستخدام Template Literal*
-            const apiUrl = https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey};
+        {currentScan && (
+          <View style={styles.resultContainer}>
+            <View
+              style={[
+                styles.resultCard,
+                { borderColor: getSecurityColor(currentScan.securityLevel) },
+              ]}
+            >
+              <View style={styles.resultHeader}>
+                {getSecurityIcon(currentScan.securityLevel)}
+                <Text
+                  style={[
+                    styles.resultTitle,
+                    { color: getSecurityColor(currentScan.securityLevel) },
+                  ]}
+                >
+                  {getSecurityText(currentScan.securityLevel)}
+                </Text>
+              </View>
 
-            // 2. وظيفة إخفاء/إظهار لوحة النتائج
-            const showResultBox = () => {
-                resultBox.classList.remove('hidden');
-                setTimeout(() => resultBox.classList.remove('opacity-0'), 10);
-            };
+              <View style={styles.urlContainer}>
+                <Text style={styles.urlText} numberOfLines={2}>
+                  {currentScan.url}
+                </Text>
+              </View>
 
-            const hideResultBox = () => {
-                resultBox.classList.add('opacity-0');
-                setTimeout(() => resultBox.classList.add('hidden'), 300);
-            };
+              <View style={styles.detailsContainer}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>البروتوكول:</Text>
+                  <Text
+                    style={[
+                      styles.detailValue,
+                      currentScan.hasHttps ? styles.detailValueSafe : styles.detailValueDanger,
+                    ]}
+                  >
+                    {currentScan.protocol.toUpperCase()}
+                  </Text>
+                </View>
 
-            // 3. وظيفة عرض النتائج
-            const displayResult = (isSafe, message, sources = []) => {
-                // إظهار المحتوى وإخفاء التحميل
-                resultContent.classList.remove('hidden');
-                loadingSpinner.classList.add('hidden');
-                checkButton.disabled = false;
-                buttonText.textContent = "فحص الرابط";
-                showResultBox();
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>النطاق:</Text>
+                  <Text style={styles.detailValue} numberOfLines={1}>
+                    {currentScan.domain}
+                  </Text>
+                </View>
 
-                // تحديث الرسالة واللون
-                resultBox.classList.remove('border-red-500', 'bg-red-50', 'border-emerald-500', 'bg-emerald-50', 'border-yellow-500', 'bg-yellow-50');
-                statusIcon.classList.remove('text-red-500', 'text-emerald-500', 'text-yellow-500');
-                statusTitle.classList.remove('text-red-700', 'text-emerald-700', 'text-yellow-700');
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>طول الرابط:</Text>
+                  <Text style={styles.detailValue}>{currentScan.length} حرف</Text>
+                </View>
 
-                resultMessage.textContent = message;
+                {currentScan.isShortened && (
+                  <View style={styles.warningBadge}>
+                    <Text style={styles.warningBadgeText}>رابط مختصر</Text>
+                  </View>
+                )}
+              </View>
 
-                if (isSafe === null) { // حالة انتظار (تحقق من الإدخال)
-                    resultBox.classList.add('border-yellow-500', 'bg-yellow-50');
-                    statusIcon.classList.add('text-yellow-500');
-                    statusTitle.classList.add('text-yellow-700');
-                    statusTitle.textContent = 'تنبيه';
-                    statusIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.332 16c-.77 1.333.192 3 1.732 3z"></path>';
-                } else if (isSafe) {
-                    resultBox.classList.add('border-emerald-600', 'bg-emerald-50');
-                    statusIcon.classList.add('text-emerald-600');
-                    statusTitle.classList.add('text-emerald-700');
-                    statusTitle.textContent = 'آمن';
-                    statusIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
-                } else {
-                    resultBox.classList.add('border-red-600', 'bg-red-50');
-                    statusIcon.classList.add('text-red-600');
-                    statusTitle.classList.add('text-red-700');
-                    statusTitle.textContent = 'خطر!';
-                    statusIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
-                }
+              {currentScan.suspiciousPatterns.length > 0 && (
+                <View style={styles.patternsContainer}>
+                  <Text style={styles.patternsTitle}>تحذيرات:</Text>
+                  {currentScan.suspiciousPatterns.map((pattern, index) => (
+                    <View key={index} style={styles.patternItem}>
+                      <View style={styles.patternDot} />
+                      <Text style={styles.patternText}>{pattern}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
 
-                // عرض المصادر (إذا كانت موجودة)
-                sourceList.innerHTML = '';
-                if (sources.length > 0) {
-                    sourceDisplay.classList.remove('hidden');
-                    sources.forEach(source => {
-                        const li = document.createElement('li');
-                        // يجب استخدام علامات التنصيص العادية أو الـ Template literal هنا أيضاً
-                        li.innerHTML = <a href="${source.uri}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${source.title}</a>;
-                        sourceList.appendChild(li);
-                    });
-                } else {
-                    sourceDisplay.classList.add('hidden');
-                }
-            };
+              <View style={styles.actionsContainer}>
+                <TouchableOpacity style={styles.actionButton} onPress={copyToClipboard}>
+                  <Copy color="#059669" size={22} strokeWidth={2.5} />
+                  <Text style={styles.actionButtonText}>نسخ</Text>
+                </TouchableOpacity>
 
-            // 4. وظيفة فحص أمان الرابط
-            // *التصحيح رقم 2: دمج آلية Exponential Backoff لإدارة أخطاء الاتصال*
-            async function checkLinkSecurity(url) {
-                if (!url.trim()) {
-                    displayResult(null, "الرجاء إدخال رابط للتحقق.", []);
-                    return;
-                }
+                <TouchableOpacity style={styles.actionButton} onPress={openLink}>
+                  <ExternalLink color="#059669" size={22} strokeWidth={2.5} />
+                  <Text style={styles.actionButtonText}>فتح</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
 
-                // تفعيل حالة التحميل
-                showResultBox();
-                resultContent.classList.add('hidden');
-                loadingSpinner.classList.remove('hidden');
-                checkButton.disabled = true;
-                buttonText.textContent = "جاري الفحص...";
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 24,
+    paddingBottom: 40,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 20,
+  },
+  iconContainer: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  title: {
+    fontSize: 34,
+    fontWeight: '800' as const,
+    color: '#111827',
+    marginBottom: 10,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 17,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 18,
+    fontSize: 17,
+    color: '#111827',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  scanButton: {
+    backgroundColor: '#10B981',
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 24,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  scanButtonDisabled: {
+    opacity: 0.6,
+  },
+  scanButtonText: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
+  },
+  resultContainer: {
+    marginTop: 8,
+  },
+  resultCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 28,
+    borderWidth: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  resultHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  resultTitle: {
+    fontSize: 32,
+    fontWeight: '800' as const,
+    marginTop: 16,
+    letterSpacing: -0.5,
+  },
+  urlContainer: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  urlText: {
+    fontSize: 15,
+    color: '#4B5563',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  detailsContainer: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  detailLabel: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500' as const,
+  },
+  detailValue: {
+    fontSize: 16,
+    color: '#111827',
+    fontWeight: '700' as const,
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 12,
+  },
+  detailValueSafe: {
+    color: '#10B981',
+  },
+  detailValueDanger: {
+    color: '#EF4444',
+  },
+  warningBadge: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  warningBadgeText: {
+    color: '#D97706',
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  patternsContainer: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  patternsTitle: {
+    fontSize: 17,
+    fontWeight: '800' as const,
+    color: '#DC2626',
+    marginBottom: 14,
+  },
+  patternItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+    gap: 10,
+  },
+  patternDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    marginTop: 7,
+  },
+  patternText: {
+    fontSize: 15,
+    color: '#991B1B',
+    flex: 1,
+    lineHeight: 22,
+    fontWeight: '500' as const,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 2,
+    borderColor: '#BBF7D0',
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#059669',
+  },
+});
+import { useLinkScanner } from '@/contexts/LinkScannerContext';
+import { SecurityLevel } from '@/types/link';
+import { Shield, ShieldAlert, ShieldCheck, Trash2, Clock } from 'lucide-react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
 
-                const systemPrompt = Act as a world-class security analyst and fact-checker. You must determine if the provided URL is safe, malicious (phishing, malware), or suspicious. Use Google Search grounding to gather real-time data about the domain, its reputation, and recent security reports. Your output must be a concise, single paragraph summary. If the URL is known to be malicious, state it clearly. If it's safe and legitimate, confirm its safety. If it leads to a common login page (e.g., Facebook, banking, crypto wallet), warn the user that this could be a phishing attempt if they did not request it.;
+export default function HistoryScreen() {
+  const { history, clearHistory, deleteHistoryItem, setCurrentScan } = useLinkScanner();
 
-                const userQuery = Analyze and determine the security status of this URL: ${url};
+  const getSecurityColor = (level: SecurityLevel) => {
+    switch (level) {
+      case 'safe':
+        return '#10B981';
+      case 'warning':
+        return '#F59E0B';
+      case 'danger':
+        return '#EF4444';
+    }
+  };
 
-                const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    tools: [{ "google_search": {} }],
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    },
-                };
+  const getSecurityIcon = (level: SecurityLevel) => {
+    const color = getSecurityColor(level);
+    const size = 24;
+    switch (level) {
+      case 'safe':
+        return <ShieldCheck color={color} size={size} />;
+      case 'warning':
+        return <ShieldAlert color={color} size={size} />;
+      case 'danger':
+        return <Shield color={color} size={size} />;
+    }
+  };
 
-                const MAX_RETRIES = 5;
-                for (let i = 0; i < MAX_RETRIES; i++) {
-                    let response;
-                    try {
-                        response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
 
-                        if (response.status === 429 || response.status >= 500) {
-                            // إذا كان الخطأ بسبب الضغط (429) أو خطأ في الخادم (5xx)، نقوم بإعادة المحاولة
-                            if (i < MAX_RETRIES - 1) {
-                                const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
-                                await new Promise(resolve => setTimeout(resolve, delay));
-                                continue;
-                            } else {
-                                throw new Error(API failed after ${MAX_RETRIES} retries with status: ${response.status});
-                            }
-                        }
+    if (minutes < 1) return 'الآن';
+    if (minutes < 60) return `منذ ${minutes} دقيقة`;
+    if (hours < 24) return `منذ ${hours} ساعة`;
+    return `منذ ${days} يوم`;
+  };
 
-                        if (!response.ok) {
-                            throw new Error(HTTP error! status: ${response.status});
-                        }
+  const handleClearAll = () => {
+    Alert.alert(
+      'حذف السجل',
+      'هل أنت متأكد من حذف جميع السجلات؟',
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        { text: 'حذف', style: 'destructive', onPress: clearHistory },
+      ]
+    );
+  };
 
-                        const result = await response.json();
-                        const candidate = result.candidates?.[0];
+  const handleDeleteItem = (id: string) => {
+    Alert.alert(
+      'حذف',
+      'هل تريد حذف هذا العنصر؟',
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        { text: 'حذف', style: 'destructive', onPress: () => deleteHistoryItem(id) },
+      ]
+    );
+  };
 
-                        let text = "تعذر الحصول على نتيجة الفحص.";
-                        let sources = [];
-                        let isSafe = null;
+  const handleItemPress = (item: typeof history[0]) => {
+    setCurrentScan(item);
+  };
 
-                        if (candidate && candidate.content?.parts?.[0]?.text) {
-                            text = candidate.content.parts[0].text;
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Clock color="#10B981" size={32} strokeWidth={2.5} />
+          <View style={styles.headerText}>
+            <Text style={styles.title}>السجل</Text>
+            <Text style={styles.subtitle}>{history.length} رابط مفحوص</Text>
+          </View>
+        </View>
+        {history.length > 0 && (
+          <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
+            <Trash2 color="#DC2626" size={22} strokeWidth={2.5} />
+          </TouchableOpacity>
+        )}
+      </View>
 
-                            // استخراج حالة الأمان التقديرية من الرد (تخمين بناءً على الكلمات المفتاحية)
-                            const lowerText = text.toLowerCase();
-                            if (lowerText.includes('malicious') || lowerText.includes('phishing') || lowerText.includes('danger') || lowerText.includes('خطر') || lowerText.includes('مشبوة') || lowerText.includes('احتيال')) {
-                                isSafe = false;
-                            } else if (lowerText.includes('safe') || lowerText.includes('legitimate') || lowerText.includes('آمنة') || lowerText.includes('موثوقة')) {
-                                isSafe = true;
-                            } else {
-                                isSafe = null; // حالة محايدة/تحذير
-                            }
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {history.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Clock color="#9CA3AF" size={72} strokeWidth={2} />
+            <Text style={styles.emptyText}>لا يوجد سجل بعد</Text>
+            <Text style={styles.emptySubtext}>ابدأ بفحص الروابط لرؤية السجل هنا</Text>
+          </View>
+        ) : (
+          history.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.historyItem,
+                { borderLeftColor: getSecurityColor(item.securityLevel) },
+              ]}
+              onPress={() => handleItemPress(item)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.itemHeader}>
+                <View style={styles.itemIcon}>
+                  {getSecurityIcon(item.securityLevel)}
+                </View>
+                <View style={styles.itemContent}>
+                  <Text style={styles.itemDomain} numberOfLines={1}>
+                    {item.domain}
+                  </Text>
+                  <Text style={styles.itemUrl} numberOfLines={1}>
+                    {item.url}
+                  </Text>
+                  <Text style={styles.itemTime}>{formatDate(item.timestamp)}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteItem(item.id)}
+                >
+                  <Trash2 color="#6B7280" size={20} strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
 
+              {item.suspiciousPatterns.length > 0 && (
+                <View style={styles.warningsContainer}>
+                  <Text style={styles.warningsCount}>
+                    {item.suspiciousPatterns.length} تحذير
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))
+        )}
+      </ScrollView>
+    </View>
+  );
+}
 
-                            // استخراج المصادر
-                            const groundingMetadata = candidate.groundingMetadata;
-                            if (groundingMetadata && groundingMetadata.groundingAttributions) {
-                                sources = groundingMetadata.groundingAttributions
-                                    .map(attribution => ({
-                                        uri: attribution.web?.uri,
-                                        title: attribution.web?.title,
-                                    }))
-                                    .filter(source => source.uri && source.title);
-                            }
-                        }
-
-                        displayResult(isSafe, text, sources);
-                        return; // الخروج من الوظيفة عند النجاح
-
-                    } catch (error) {
-                        console.error("Gemini API Error:", error);
-                        if (i === MAX_RETRIES - 1) {
-                             displayResult(false, "حدث خطأ أثناء الاتصال بخدمة فحص الأمان بشكل متكرر. (الرجاء المحاولة لاحقاً).", []);
-                        }
-                    }
-                }
-
-                 // في حال الخروج من الحلقة دون نجاح
-                 displayResult(false, "حدث خطأ أثناء الاتصال بخدمة فحص الأمان. (قد تكون المشكلة في الاتصال بالشبكة أو إعدادات الأمان).", []);
-            }
-
-            // 5. ربط الزر بوظيفة الفحص
-            checkButton.addEventListener('click', () => {
-                const url = linkInput.value;
-                checkLinkSecurity(url);
-            });
-
-            // 6. الإعداد الأولي للواجهة
-            window.onload = () => {
-                displayResult(null, "الرجاء إدخال رابط للتحقق قبل الضغط على 'فحص الرابط'.");
-            };
-
-        </script>
-    </body>
-    </html>
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 24,
+    paddingTop: 20,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerText: {
+    gap: 4,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: '800' as const,
+    color: '#111827',
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: '#6B7280',
+    fontWeight: '500' as const,
+  },
+  clearButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 24,
+    paddingTop: 20,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 100,
+  },
+  emptyText: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    color: '#4B5563',
+    marginTop: 20,
+  },
+  emptySubtext: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    marginTop: 10,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  historyItem: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 14,
+    borderLeftWidth: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  itemIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemContent: {
+    flex: 1,
+    gap: 4,
+  },
+  itemDomain: {
+    fontSize: 17,
+    fontWeight: '700' as const,
+    color: '#111827',
+  },
+  itemUrl: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+  },
+  itemTime: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    marginTop: 4,
+    fontWeight: '500' as const,
+  },
+  deleteButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  warningsContainer: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  warningsCount: {
+    fontSize: 14,
+    color: '#D97706',
+    fontWeight: '700' as const,
+  },
+});
