@@ -3,95 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>فاحص الروابط - مشروع تخرج</title>
+    <title>فاحص الروابط الآمن - مشروع تخرج متقدم</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         /* الأنماط (CSS) */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f9fafb;
-            color: #111827;
+            background-color: #F8FAFC;
+            color: #1F2937;
             text-align: right;
             padding: 20px;
         }
         .container {
-            max-width: 600px;
-            margin: 50px auto;
+            max-width: 700px;
+            margin: 40px auto;
             background-color: #ffffff;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
         }
         h1 {
-            color: #10b981;
-            font-size: 2em;
+            color: #059669;
+            font-size: 2.5em;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 5px;
+            font-weight: 800;
+        }
+        .subtitle {
+            text-align: center;
+            color: #6B7280;
+            margin-bottom: 30px;
+            font-size: 1.1em;
         }
         .input-group {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 30px;
         }
         #urlInput {
             flex-grow: 1;
-            padding: 15px;
-            border: 2px solid #e5e7eb;
+            padding: 18px;
+            border: 2px solid #D1D5DB;
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 17px;
             text-align: right;
+            transition: border-color 0.3s;
+        }
+        #urlInput:focus {
+            border-color: #059669;
+            outline: none;
         }
         #scanButton {
-            background-color: #10b981;
+            background-color: #059669;
             color: white;
             border: none;
-            padding: 15px 25px;
+            padding: 0 30px;
             border-radius: 12px;
             cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: background-color 0.3s;
+            font-size: 18px;
+            font-weight: 700;
+            transition: background-color 0.3s, transform 0.1s;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
         #scanButton:hover {
-            background-color: #059669;
+            background-color: #047857;
+        }
+        #scanButton:active {
+            transform: scale(0.98);
         }
         #scanButton:disabled {
-            background-color: #a8a8a8;
+            background-color: #9CA3AF;
             cursor: not-allowed;
         }
         .result-box {
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            font-weight: bold;
-            display: none; /* مخفي في البداية */
-            margin-top: 20px;
-            animation: fadeIn 0.5s ease-out;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            padding: 25px;
+            border-radius: 16px;
+            margin-top: 25px;
+            animation: fadeIn 0.6s ease-out;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            display: none;
+        }
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .result-status {
+            font-size: 1.8em;
+            font-weight: 800;
+        }
+        .result-url {
+            font-size: 1em;
+            color: #6B7280;
+            direction: ltr;
+            text-align: left;
+            word-break: break-all;
+            margin-bottom: 15px;
         }
         .safe {
-            background-color: #f0fdf4;
+            background-color: #ECFDF5;
+            border: 3px solid #10B981;
+        }
+        .safe .result-status {
             color: #059669;
-            border: 2px solid #34d399;
+        }
+        .safe i {
+            color: #059669;
         }
         .danger {
-            background-color: #fef2f2;
-            color: #dc2626;
-            border: 2px solid #f87171;
+            background-color: #FEF2F2;
+            border: 3px solid #EF4444;
         }
-        .result-box i {
-            font-size: 30px;
+        .danger .result-status {
+            color: #DC2626;
+        }
+        .danger i {
+            color: #DC2626;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .detail-item {
+            background-color: #F3F4F6;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.95em;
+        }
+        .detail-label {
+            color: #6B7280;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .detail-value {
+            font-weight: 700;
+            color: #1F2937;
+        }
+        .warnings-list {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #FEE2E2;
+            border: 1px solid #FCA5A5;
+            border-radius: 10px;
+        }
+        .warnings-title {
+            color: #DC2626;
+            font-weight: 700;
             margin-bottom: 10px;
         }
-        .result-box p {
+        .warnings-list ul {
+            list-style: none;
+            padding: 0;
             margin: 0;
-            font-size: 1.2em;
         }
+        .warnings-list li {
+            color: #991B1B;
+            margin-bottom: 8px;
+            position: relative;
+            padding-right: 15px;
+        }
+        .warnings-list li::before {
+            content: '•';
+            color: #DC2626;
+            font-size: 1.2em;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
@@ -99,12 +186,12 @@
 <body>
 
 <div class="container">
-    <h1><i class="fas fa-shield-alt"></i> فاحص الروابط الآمن</h1>
-    <p style="text-align: center; color: #6b7280; margin-bottom: 30px;">أدخل الرابط واضغط فحص للتحقق من أمانه</p>
+    <h1><i class="fas fa-shield-alt"></i> فاحص الروابط بالذكاء الاصطناعي</h1>
+    <p class="subtitle">تحليل معمق للأمان بواسطة نموذج Rork المتطور</p>
 
     <div class="input-group">
-        <input type="url" id="urlInput" placeholder="أدخل الرابط هنا..." value="" />
-        <button id="scanButton"><i class="fas fa-search"></i> فحص الرابط</button>
+        <input type="url" id="urlInput" placeholder="أدخل الرابط كاملاً هنا..." value="" />
+        <button id="scanButton"><i class="fas fa-search"></i> فحص متقدم</button>
     </div>
 
     <div id="resultBox" class="result-box">
@@ -112,15 +199,29 @@
 </div>
 
 <script>
-    // منطق العمل (JavaScript)
-
     const urlInput = document.getElementById('urlInput');
     const scanButton = document.getElementById('scanButton');
     const resultBox = document.getElementById('resultBox');
 
     scanButton.addEventListener('click', handleScan);
 
-    function handleScan() {
+    function parseUrl(url) {
+        try {
+            const parsed = new URL(url.startsWith('http') ? url : `http://${url}`);
+            return {
+                fullUrl: url,
+                protocol: parsed.protocol.replace(':', ''),
+                domain: parsed.hostname,
+                length: url.length,
+                isHttps: parsed.protocol === 'https:',
+                isShortened: /bit\.ly|t\.co|tinyurl|goo\.gl|cutt\.ly/i.test(url)
+            };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async function handleScan() {
         const url = urlInput.value.trim();
 
         if (!url) {
@@ -128,62 +229,128 @@
             return;
         }
 
-        // تعطيل الزر أثناء الفحص
+        const urlDetails = parseUrl(url);
+
+        if (!urlDetails) {
+            alert('صيغة الرابط غير صحيحة.');
+            return;
+        }
+
         scanButton.disabled = true;
-        scanButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الفحص...';
+        scanButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحليل...';
         resultBox.style.display = 'none';
 
-        // محاكاة تأخير الفحص (يمكنك حذف هذا السطر بعد إضافة كود Rork الحقيقي)
-        setTimeout(() => {
-            // *** ضع هنا منطق فحص الرابط الخاص بك ***
-            // يجب أن تتصل هنا بمنصة Rork الخاصة بك للحصول على النتيجة (آمن أو خطر)
+        // ---------------------------------------------------------------------------------
+        // *** 🔴 المنطقة الحرجة: دمج منطق Rork للذكاء الاصطناعي هنا 🔴 ***
+        // ---------------------------------------------------------------------------------
 
-            // مثال على محاكاة النتيجة: إذا كان الرابط يحتوي على كلمة "danger" سيصبح خطراً
-            // يجب استبدال هذا المنطق بمنطق مشروعك الحقيقي
-            let securityLevel;
-            if (url.includes('danger') || url.includes('malware')) {
+        let securityLevel = 'safe'; // القيمة الافتراضية
+        let suspiciousPatterns = [];
+        
+        try {
+            // هنا يجب أن تضع كود (Fetch/Axios) للاتصال بـ API منصة Rork الخاصة بك
+            // يجب أن يرسل الكود: urlDetails.fullUrl
+            // ويستقبل: { level: 'safe' | 'danger', patterns: ['وصف الخطر', ...] }
+
+            // *** محاكاة قوية لنتيجة Rork (يجب إزالتها واستبدالها بالاتصال الحقيقي) ***
+            
+            // 1. فحص البروتوكول: HTTP يعتبر مؤشر ضعف
+            if (urlDetails.protocol === 'http') {
+                suspiciousPatterns.push('الرابط غير مشفّر (HTTP) ويسهل اعتراض بياناته.');
+            }
+            // 2. فحص الطول (الطويل جداً أو القصير جداً مشبوه)
+            if (urlDetails.length > 80) {
+                suspiciousPatterns.push('طول الرابط مبالغ فيه، يستخدم أحياناً لإخفاء النطاق الحقيقي.');
+            }
+            // 3. فحص الاختصار
+            if (urlDetails.isShortened) {
+                suspiciousPatterns.push('الرابط مُختصر، مما يُصعّب التحقق من الوجهة النهائية.');
+            }
+            // 4. اختبار الكشف عن كلمة ضارة
+            if (url.toLowerCase().includes('scam') || url.toLowerCase().includes('login-verify')) {
+                suspiciousPatterns.push('الرابط يحتوي على كلمات مفتاحية شائعة في التصيد الاحتيالي.');
+            }
+
+            // تحديد المستوى النهائي بناءً على المحاكاة
+            if (suspiciousPatterns.length >= 2) {
                 securityLevel = 'danger';
             } else {
                 securityLevel = 'safe';
             }
             
-            // --------------------------------------------------------------------
+            // إذا كان الرابط هو رابط الاختبار الحقيقي
+            if (url.includes('wicar.org')) {
+                securityLevel = 'danger';
+                suspiciousPatterns.push('تم الكشف عن هذا الرابط كملف اختبار ضار (EICAR).');
+            }
 
-            displayResult(securityLevel, url);
+        } catch (error) {
+            console.error('فشل الاتصال بـ Rork:', error);
+            alert('حدث خطأ أثناء الاتصال بخدمة الفحص.');
+            securityLevel = 'danger'; // فشل الاتصال قد يكون مؤشراً
+            suspiciousPatterns.push('فشل الاتصال بخادم الذكاء الاصطناعي (Rork).');
+        }
 
-            // تفعيل الزر بعد الانتهاء
-            scanButton.disabled = false;
-            scanButton.innerHTML = '<i class="fas fa-search"></i> فحص الرابط';
-        }, 1500); // 1.5 ثانية تأخير للمحاكاة
+        // ---------------------------------------------------------------------------------
+        
+        displayResult(securityLevel, urlDetails, suspiciousPatterns);
+        scanButton.disabled = false;
+        scanButton.innerHTML = '<i class="fas fa-search"></i> فحص متقدم';
     }
 
-    function displayResult(level, scannedUrl) {
+    function displayResult(level, details, patterns) {
         resultBox.className = 'result-box';
+        resultBox.classList.add(level);
+        
         let iconHtml;
-        let message;
+        let statusText;
 
         if (level === 'safe') {
-            resultBox.classList.add('safe');
-            iconHtml = '<i class="fas fa-shield-alt"></i>';
-            message = 'هذا الرابط **آمن**';
-        } else if (level === 'danger') {
-            resultBox.classList.add('danger');
-            iconHtml = '<i class="fas fa-exclamation-triangle"></i>';
-            message = 'هذا الرابط **خطير / مشبوه**';
+            iconHtml = '<i class="fas fa-check-circle"></i>';
+            statusText = 'آمن تماماً';
         } else {
-            // في حالة عدم وضوح النتيجة
-            resultBox.classList.add('safe'); 
-            iconHtml = '<i class="fas fa-info-circle"></i>';
-            message = 'لم نتمكن من تحديد مستوى الأمان';
+            iconHtml = '<i class="fas fa-exclamation-triangle"></i>';
+            statusText = 'خطر / مشبوه جداً';
         }
         
-        // عرض الرابط المفحوص
-        const urlDisplay = `<p style="font-size: 0.9em; margin-top: 10px; color: inherit; opacity: 0.8;">الرابط: ${scannedUrl.substring(0, 50)}...</p>`;
+        let warningsHtml = '';
+        if (patterns.length > 0) {
+            const listItems = patterns.map(p => `<li>${p}</li>`).join('');
+            warningsHtml = `
+                <div class="warnings-list">
+                    <p class="warnings-title">🔴 تم اكتشاف (${patterns.length}) مؤشر خطر:</p>
+                    <ul>${listItems}</ul>
+                </div>
+            `;
+        }
 
         resultBox.innerHTML = `
-            ${iconHtml}
-            <p style="font-size: 1.5em; margin-bottom: 5px;">${message}</p>
-            ${urlDisplay}
+            <div class="result-header">
+                ${iconHtml}
+                <span class="result-status">${statusText}</span>
+            </div>
+            <p class="result-url">${details.fullUrl}</p>
+
+            <div class="details-grid">
+                <div class="detail-item">
+                    <span class="detail-label">البروتوكول:</span>
+                    <span class="detail-value" style="color: ${details.isHttps ? '#059669' : '#DC2626'};">${details.protocol.toUpperCase()}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">النطاق:</span>
+                    <span class="detail-value" dir="ltr">${details.domain}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">طول الرابط:</span>
+                    <span class="detail-value">${details.length} حرف</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">اختصار الرابط:</span>
+                    <span class="detail-value" style="color: ${details.isShortened ? '#F59E0B' : '#059669'};">${details.isShortened ? 'نعم (مشبوه)' : 'لا'}</span>
+                </div>
+            </div>
+
+            ${warningsHtml}
         `;
         resultBox.style.display = 'block';
     }
