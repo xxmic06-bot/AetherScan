@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>فاحص الروابط الآمن - مشروع تخرج متقدم</title>
+    <title>AetherScan - فاحص الروابط</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         /* الأنماط (CSS) */
@@ -186,8 +186,8 @@
 <body>
 
 <div class="container">
-    <h1><i class="fas fa-shield-alt"></i> فاحص الروابط بالذكاء الاصطناعي</h1>
-    <p class="subtitle">تحليل معمق للأمان بواسطة نموذج Rork المتطور</p>
+    <h1><i class="fas fa-satellite-dish"></i> AetherScan</h1>
+    <p class="subtitle">فحص متقدم للأمان باستخدام تحليل البنية والميزات</p>
 
     <div class="input-group">
         <input type="url" id="urlInput" placeholder="أدخل الرابط كاملاً هنا..." value="" />
@@ -207,14 +207,17 @@
 
     function parseUrl(url) {
         try {
-            const parsed = new URL(url.startsWith('http') ? url : `http://${url}`);
+            // إضافة بروتوكول افتراضي إذا لم يكن موجوداً لتجنب خطأ parse
+            const link = url.startsWith('http') ? url : `http://${url}`;
+            const parsed = new URL(link);
             return {
                 fullUrl: url,
                 protocol: parsed.protocol.replace(':', ''),
                 domain: parsed.hostname,
                 length: url.length,
                 isHttps: parsed.protocol === 'https:',
-                isShortened: /bit\.ly|t\.co|tinyurl|goo\.gl|cutt\.ly/i.test(url)
+                // فحص مختصر للروابط الشائعة المختصرة
+                isShortened: /bit\.ly|t\.co|tinyurl|goo\.gl|cutt\.ly|cli\.gs|t\.ly/i.test(url)
             };
         } catch (e) {
             return null;
@@ -241,58 +244,54 @@
         resultBox.style.display = 'none';
 
         // ---------------------------------------------------------------------------------
-        // *** 🔴 المنطقة الحرجة: دمج منطق Rork للذكاء الاصطناعي هنا 🔴 ***
+        // *** 🔴 المنطقة الحرجة: منطق الفحص القوي (محاكاة/دمج Rork) 🔴 ***
         // ---------------------------------------------------------------------------------
 
-        let securityLevel = 'safe'; // القيمة الافتراضية
+        let securityLevel = 'safe'; 
         let suspiciousPatterns = [];
         
-        try {
-            // هنا يجب أن تضع كود (Fetch/Axios) للاتصال بـ API منصة Rork الخاصة بك
-            // يجب أن يرسل الكود: urlDetails.fullUrl
-            // ويستقبل: { level: 'safe' | 'danger', patterns: ['وصف الخطر', ...] }
+        // ********** هذا الجزء يمثل قوة فحص مشروعك الآن **********
 
-            // *** محاكاة قوية لنتيجة Rork (يجب إزالتها واستبدالها بالاتصال الحقيقي) ***
-            
-            // 1. فحص البروتوكول: HTTP يعتبر مؤشر ضعف
-            if (urlDetails.protocol === 'http') {
-                suspiciousPatterns.push('الرابط غير مشفّر (HTTP) ويسهل اعتراض بياناته.');
-            }
-            // 2. فحص الطول (الطويل جداً أو القصير جداً مشبوه)
-            if (urlDetails.length > 80) {
-                suspiciousPatterns.push('طول الرابط مبالغ فيه، يستخدم أحياناً لإخفاء النطاق الحقيقي.');
-            }
-            // 3. فحص الاختصار
-            if (urlDetails.isShortened) {
-                suspiciousPatterns.push('الرابط مُختصر، مما يُصعّب التحقق من الوجهة النهائية.');
-            }
-            // 4. اختبار الكشف عن كلمة ضارة
-            if (url.toLowerCase().includes('scam') || url.toLowerCase().includes('login-verify')) {
-                suspiciousPatterns.push('الرابط يحتوي على كلمات مفتاحية شائعة في التصيد الاحتيالي.');
-            }
-
-            // تحديد المستوى النهائي بناءً على المحاكاة
-            if (suspiciousPatterns.length >= 2) {
-                securityLevel = 'danger';
-            } else {
-                securityLevel = 'safe';
-            }
-            
-            // إذا كان الرابط هو رابط الاختبار الحقيقي
-            if (url.includes('wicar.org')) {
-                securityLevel = 'danger';
-                suspiciousPatterns.push('تم الكشف عن هذا الرابط كملف اختبار ضار (EICAR).');
-            }
-
-        } catch (error) {
-            console.error('فشل الاتصال بـ Rork:', error);
-            alert('حدث خطأ أثناء الاتصال بخدمة الفحص.');
-            securityLevel = 'danger'; // فشل الاتصال قد يكون مؤشراً
-            suspiciousPatterns.push('فشل الاتصال بخادم الذكاء الاصطناعي (Rork).');
+        // 1. فحص البروتوكول (HTTP غير مشفر يعتبر مؤشر خطر كافٍ)
+        if (urlDetails.protocol === 'http') {
+            suspiciousPatterns.push('الرابط غير مشفّر (HTTP) ويسهل اعتراض بياناته. **(خطر عالي)**');
         }
+
+        // 2. فحص الاختصار (يعتبر مؤشر خطر كافٍ لوحده)
+        if (urlDetails.isShortened) {
+            suspiciousPatterns.push('الرابط مُختصر، مما يُصعّب التحقق من الوجهة النهائية. **(خطر عالي)**');
+        }
+
+        // 3. فحص الكلمات المفتاحية الشائعة في الاحتيال والبرامج الضارة (Phishing/Malware)
+        const suspiciousWords = ['scam', 'login-verify', 'free-soft', 'update-now', 'payment-failed', 'security-alert', 'download-exe'];
+        const lowerCaseUrl = url.toLowerCase();
+        
+        suspiciousWords.forEach(word => {
+            if (lowerCaseUrl.includes(word)) {
+                suspiciousPatterns.push(`الرابط يحتوي على كلمة مفتاحية مشبوهة: "${word}".`);
+            }
+        });
+        
+        // 4. اختبار الكشف عن رابط EICAR (للتأكد من عمل الفحص)
+        if (url.includes('wicar.org')) {
+            securityLevel = 'danger'; // التصنيف مباشرة كخطر
+            suspiciousPatterns.push('تم الكشف عن هذا الرابط كملف اختبار ضار (EICAR).');
+        }
+
+
+        // 5. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
+        if (suspiciousPatterns.length >= 1) {
+            securityLevel = 'danger';
+        } 
+        
+        // ********** نهاية منطق قوة فحص مشروعك **********
 
         // ---------------------------------------------------------------------------------
         
+        // محاكاة تأخير بسيط (لإظهار شاشة الفحص)
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+
         displayResult(securityLevel, urlDetails, suspiciousPatterns);
         scanButton.disabled = false;
         scanButton.innerHTML = '<i class="fas fa-search"></i> فحص متقدم';
@@ -310,7 +309,7 @@
             statusText = 'آمن تماماً';
         } else {
             iconHtml = '<i class="fas fa-exclamation-triangle"></i>';
-            statusText = 'خطر / مشبوه جداً';
+            statusText = 'خطر / مشبوه';
         }
         
         let warningsHtml = '';
