@@ -248,6 +248,7 @@
                 fullUrl: url,
                 protocol: parsed.protocol.replace(':', ''),
                 domain: parsed.hostname,
+                path: parsed.pathname + parsed.search + parsed.hash, // الحصول على المسار بالكامل
                 length: url.length,
                 isHttps: parsed.protocol === 'https:',
                 isShortened: /bit\.ly|t\.co|tinyurl|goo\.gl|cutt\.ly|cli\.gs|t\.ly/i.test(url)
@@ -288,12 +289,17 @@
         // القائمة الموسعة للنطاقات الآمنة جداً (UltraSafe Domains)
         const ultraSafeDomains = [
             'google.com', 'youtube.com', 'facebook.com', 'twitter.com', 'instagram.com', 
-            'tiktok.com', 'apple.com', 'amazon.com', 'whatsapp.com', 'github.com', 'microsoft.com',
-            'speedtest.net', 'wikipedia.org', 'linkedin.com', 'reddit.com', 'cisco.com', 
-            'bing.com', 'yahoo.com', 'netflix.com', 'spotify.com', 'paypal.com', 'ebay.com',
-            'adobe.com', 'oracle.com', 'ibm.com', 'samsung.com', 'dell.com', 'hp.com',
+            'tiktok.com', 'apple.com', 'samsung.com', 'huawei.com', 'amazon.com', 'whatsapp.com', 
+            'github.com', 'microsoft.com', 'speedtest.net', 'wikipedia.org', 'linkedin.com', 
+            'reddit.com', 'cisco.com', 'bing.com', 'yahoo.com', 'netflix.com', 'paypal.com', 
+            'ebay.com', 'adobe.com', 'oracle.com', 'ibm.com', 'dell.com', 'hp.com',
+            'alipay.com', 'tencent.com', 'baidu.com', 'weibo.com', 'vk.com',
+            
+            // مواقع حكومية وتعليمية وخدمية سعودية موسعة
             'gov.sa', 'edu.sa', 'saudibanks.sa', 'stc.com.sa', 'mobily.com.sa', 'zeker.sa', 
-            'absher.sa', 'elm.sa', 'mof.gov.sa', 'cma.org.sa', 'sama.gov.sa', 'moe.gov.sa'
+            'absher.sa', 'elm.sa', 'mof.gov.sa', 'cma.org.sa', 'sama.gov.sa', 'moe.gov.sa',
+            'kfupm.edu.sa', 'ksu.edu.sa', 'tuwaiq.edu.sa', 'mcit.gov.sa', 'nic.gov.sa', 
+            'yesser.gov.sa', 'saudi.gov.sa'
         ];
         
         const domainToCheck = urlDetails.domain.toLowerCase();
@@ -345,7 +351,7 @@
             }
         }
 
-        // 4-ب. *** القاعدة الجديدة والحاسمة: أي نطاق غير مطابق بالضبط يعتبر مشبوهًا ***
+        // 4-ب. *** القاعدة الحاسمة: أي نطاق غير مطابق بالضبط يعتبر مشبوهًا ***
         // إذا لم يكن النطاق مطابقاً تماماً لأحد النطاقات الآمنة في القائمة
         if (!isExactMatch) { 
              const domainNoTLD = cleanDomain.substring(0, cleanDomain.lastIndexOf('.'));
@@ -369,7 +375,7 @@
                 }
              }
 
-             // الكشف عن رموز غير مسموحة (مثل الرموز المضللة - Punycode characters)
+             // الكشف عن رموز غير مسموحة
              if (suspiciousChars) {
                  suspiciousPatterns.push('تم الكشف عن رموز أو أحرف غير قياسية في النطاق (قد تكون رموز Punycode أو Unicode للتضليل).');
              }
@@ -399,11 +405,29 @@
             }
         }
         
-        // 6. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في مسار رابط آمن)
-        // هذا الفحص يكتشف التلاعب في مسارات النطاقات الآمنة (مثل إضافة /virus-scan إلى youtube.com)
+        // 6. *** قاعدة فحص حساسية المسار (تغيير الرمز أو / أو .) ***
+        // هذه القاعدة تضمن أن أي تغيير في المسار يعتبر مؤشر خطر حتى لو كان النطاق آمناً
         if (isExactMatch) {
-            if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('search?q=') && !url.includes('google.com/search')) {
-                suspiciousPatterns.push('الرابط مطابق لنطاق آمن ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي.');
+            const path = urlDetails.path;
+            
+            // مثال: apple.com/login-verify
+            if (path.includes('login') || path.includes('verify') || path.includes('update')) {
+                suspiciousPatterns.push('النطاق آمن لكن المسار يحتوي على كلمات تشير إلى عمليات حساسة (مثل تسجيل الدخول/التحقق).');
+            }
+
+            // مثال: apple.com/..//..//etc
+            if (path.includes('../') || path.includes('//')) {
+                suspiciousPatterns.push('المسار يحتوي على رموز غير عادية (مثل // أو ../) تستخدم في هجمات المسارات.');
+            }
+            
+            // المسار الطويل بشكل غير طبيعي
+            if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('search?q=')) {
+                suspiciousPatterns.push('الرابط معروف (نطاق آمن) ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي أو تتبع.');
+            }
+
+            // إذا أظهر المسار أي من هذه العلامات، يرتفع مستوى الخطر
+            if (suspiciousPatterns.some(p => p.includes('المسار يحتوي') || p.includes('رموز غير عادية'))) {
+                securityLevel = 'danger';
             }
         }
         
@@ -417,7 +441,6 @@
         if (securityLevel === 'danger' || suspiciousPatterns.length >= 1) {
             securityLevel = 'danger';
         } else {
-            // هذا يعني أن الرابط مطابق 100% لأحد الـ ultraSafeDomains ولا يحتوي على أي مؤشر خطر آخر.
             securityLevel = 'safe'; 
         } 
         
