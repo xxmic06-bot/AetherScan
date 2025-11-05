@@ -6,7 +6,7 @@
     <title>AetherScan - فاحص الروابط</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        /* الأنماط (CSS) */
+        /* (*** الأنماط CSS كما هي دون تغيير ***) */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #F8FAFC;
@@ -146,8 +146,8 @@
             color: #1F2937;
         }
         .warnings-list {
-            margin-top: 15px;
-            padding: 15px;
+            margin-top: 14px;
+            padding: 14px;
             background-color: #FEE2E2;
             border: 1px solid #FCA5A5;
             border-radius: 10px;
@@ -207,7 +207,6 @@
 
     function parseUrl(url) {
         try {
-            // إضافة بروتوكول افتراضي إذا لم يكن موجوداً لتجنب خطأ parse
             const link = url.startsWith('http') ? url : `http://${url}`;
             const parsed = new URL(link);
             return {
@@ -216,7 +215,6 @@
                 domain: parsed.hostname,
                 length: url.length,
                 isHttps: parsed.protocol === 'https:',
-                // فحص مختصر للروابط الشائعة المختصرة
                 isShortened: /bit\.ly|t\.co|tinyurl|goo\.gl|cutt\.ly|cli\.gs|t\.ly/i.test(url)
             };
         } catch (e) {
@@ -271,24 +269,53 @@
                 suspiciousPatterns.push(`الرابط يحتوي على كلمة مفتاحية مشبوهة: "${word}".`);
             }
         });
+
+        // 4. *** القاعدة الجديدة: الكشف عن التلاعب بالنطاق (Typosquatting Check) ***
+        const commonDomains = ['youtube.com', 'google.com', 'facebook.com', 'twitter.com', 'instagram.com', 'tiktok.com'];
+        const domainToCheck = urlDetails.domain.toLowerCase();
+
+        commonDomains.forEach(safeDomain => {
+            // استخدام مسافة Levenshtein (تقدير بسيط) لتحديد التشابه القريب
+            // (هنا نستخدم مقارنة بسيطة للحروف الساكنة لزيادة الحساسية)
+            if (domainToCheck.length >= safeDomain.length - 2 && domainToCheck.length <= safeDomain.length + 2) {
+                 const cleanedDomain = domainToCheck.replace(/[^a-z0-9]/g, '');
+                 const cleanedSafeDomain = safeDomain.replace(/[^a-z0-9]/g, '');
+
+                 // مثال على التلاعب: youtobe.com
+                 if (cleanedDomain !== cleanedSafeDomain && cleanedDomain.includes(cleanedSafeDomain.slice(0, 4))) { 
+                    suspiciousPatterns.push(`النطاق قريب جداً من نطاق مشهور (${safeDomain})، قد يكون محاولة للتلاعب (Typosquatting).`);
+                 }
+            }
+        });
         
-        // 4. اختبار الكشف عن رابط EICAR (للتأكد من عمل الفحص)
+        // 5. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في رابط آمن)
+        const safeDomainList = ['google.com', 'youtube.com', 'tiktok.com', 'github.com'];
+        const isKnownSafeDomain = safeDomainList.some(domain => urlDetails.domain.includes(domain));
+        
+        if (isKnownSafeDomain) {
+            // إذا كان الرابط معروفًا بكونه آمناً ولكنه طويل بشكل مبالغ فيه (علامة على إضافة مسارات مشبوهة)
+            if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('search?q=')) { // نستثني روابط اليوتيوب والبحث العادية الطويلة
+                suspiciousPatterns.push('الرابط معروف (مثل YouTube) ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي أو تتبع.');
+            }
+        }
+        
+        // 6. اختبار الكشف عن رابط EICAR
         if (url.includes('wicar.org')) {
-            securityLevel = 'danger'; // التصنيف مباشرة كخطر
+            securityLevel = 'danger';
             suspiciousPatterns.push('تم الكشف عن هذا الرابط كملف اختبار ضار (EICAR).');
         }
 
-
-        // 5. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
-        if (suspiciousPatterns.length >= 1) {
+        // 7. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
+        if (securityLevel === 'danger' || suspiciousPatterns.length >= 1) {
             securityLevel = 'danger';
+        } else {
+            securityLevel = 'safe';
         } 
         
         // ********** نهاية منطق قوة فحص مشروعك **********
 
         // ---------------------------------------------------------------------------------
         
-        // محاكاة تأخير بسيط (لإظهار شاشة الفحص)
         await new Promise(resolve => setTimeout(resolve, 1500));
 
 
