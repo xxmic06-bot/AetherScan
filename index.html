@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AetherScan - فاحص الروابط</title>
+    <title>AetherScan - فاحص الروابط النهائي</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         /* (*** الأنماط CSS كما هي دون تغيير ***) */
@@ -292,7 +292,8 @@
             'bing.com', 'yahoo.com', 'netflix.com', 'spotify.com', 'paypal.com', 'ebay.com',
             'adobe.com', 'oracle.com', 'ibm.com', 'samsung.com', 'huawei.com', 'dell.com',
             'hp.com', 'alipay.com', 'tencent.com', 'baidu.com', 'weibo.com', 'vk.com',
-            'gov.sa', 'edu.sa', 'saudibanks.sa', 'stc.com.sa', 'mobily.com.sa', 'zeker.sa'
+            'gov.sa', 'edu.sa', 'saudibanks.sa', 'stc.com.sa', 'mobily.com.sa', 'zeker.sa', 
+            'absher.sa', 'elm.sa', 'mof.gov.sa', 'cma.org.sa', 'sama.gov.sa', 'moe.gov.sa'
         ];
         
         const domainToCheck = urlDetails.domain.toLowerCase();
@@ -321,10 +322,10 @@
             }
         });
 
-        // 4. *** القاعدة الرئيسية: الاشتباه بالنطاقات غير المدرجة (بما فيها التلاعب) ***
+        // 4. *** قاعدة التلاعب بالنطاق (Typosquatting) القصوى ***
+        // هذه القاعدة يجب أن تكون حساسة جداً لتلبية السيناريو الذي ذكرته (speeedtest.net)
         let isTyposquattingDetected = false;
 
-        // 4-أ. فحص التلاعب بالنطاق (Typosquatting) على القائمة الموسعة
         for (const safeDomain of ultraSafeDomains) {
             const tldIndex = cleanDomain.lastIndexOf('.');
             const nameToCheck = tldIndex > 0 ? cleanDomain.substring(0, tldIndex) : cleanDomain;
@@ -334,44 +335,37 @@
             
             const distance = getEditDistance(nameToCheck, safeName);
 
-            // تحقق من المطابقة التامة (نطاق آمن ومطابق)
-            if (cleanDomain === safeDomain) {
-                 isTyposquattingDetected = false;
-                 break; 
-            }
-
-            // تحقق من التلاعب بالنطاق (يختلف بحرف واحد)
+            // الشرط الحاسم: إذا كان الاختلاف حرف واحد (مسافة = 1)، فإنه خطر بنسبة 100%
             if (distance === 1) { 
-                suspiciousPatterns.push(`النطاق غير مطابق (قريب جداً) من نطاق مشهور (${safeDomain}) باختلاف حرف واحد، يُحتمل أن يكون تلاعباً (Typosquatting).`);
+                suspiciousPatterns.push(`النطاق قريب جداً من نطاق مشهور (${safeDomain}) باختلاف حرف واحد، وهو مؤشر قوي على التلاعب بالنطاق (Typosquatting).`);
                 isTyposquattingDetected = true;
+                securityLevel = 'danger'; // يتم تعيينه كخطر فوري لزيادة القوة
                 break; 
             }
         }
 
-        // 4-ب. فحص الاشتباه في النطاق نفسه (لأي نطاق غير مشهور أو غير مطابق)
+
+        // 5. *** قاعدة الاشتباه العام بالنطاقات غير المدرجة (تغطية كل الروابط الأخرى) ***
         if (!isUltraSafe && !isTyposquattingDetected) { 
             const domainNoTLD = cleanDomain.substring(0, cleanDomain.lastIndexOf('.'));
             const digitCount = (domainNoTLD.match(/\d/g) || []).length;
             const hyphenCount = (domainNoTLD.match(/-/g) || []).length;
 
-            // إذا كان النطاق يحتوي على أي رقم 
             if (digitCount > 0) {
                 suspiciousPatterns.push('النطاق يحتوي على أرقام في الاسم، وهي علامة شائعة في نطاقات الاحتيال غير المعروفة.');
             }
             
-            // إذا كان النطاق يحتوي على شرطات
             if (hyphenCount > 0) {
                  suspiciousPatterns.push('النطاق يحتوي على شرطات (-)، وهي علامة شائعة في نطاقات الاحتيال لإخفاء الكلمات.');
             }
             
-            // إذا كان النطاق طويلاً بشكل مبالغ فيه
             if (cleanDomain.length > 35) {
                  suspiciousPatterns.push('النطاق الأساسي طويل جداً (أكثر من 35 حرفاً).');
             }
         }
 
         
-        // 5. قاعدة فحص بصمة المعاملات (لروابط جوجل الطويلة)
+        // 6. قاعدة فحص بصمة المعاملات (لروابط جوجل الطويلة - لسيناريو سيسكو الأول)
         if (domainToCheck.includes('google.com') && url.includes('/aclk?')) {
             const safeLinkSegment = 'DChsSEwj58NSUhtuQAxXdf0ECHWxODQkYACICCAEQARoCd3M';
             
@@ -385,25 +379,25 @@
 
                 if (distance > 3) { 
                     suspiciousPatterns.push('تم الكشف عن تلاعب كبير في معاملات التتبع (Tracking Parameters) على نطاق Google آمن. **(خطر التلاعب بالبصمة)**');
+                    securityLevel = 'danger'; // يتم تعيينه كخطر فوري لزيادة القوة
                 }
             }
         }
         
-        // 6. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في رابط آمن)
-        // هذا الفحص يكتشف التلاعب في مسارات النطاقات الآمنة
+        // 7. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في مسار رابط آمن)
         if (isUltraSafe) {
             if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('search?q=') && !url.includes('google.com/search')) {
                 suspiciousPatterns.push('الرابط معروف (نطاق آمن) ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي أو تتبع.');
             }
         }
         
-        // 7. اختبار الكشف عن رابط EICAR
+        // 8. اختبار الكشف عن رابط EICAR
         if (url.includes('wicar.org')) {
             securityLevel = 'danger';
             suspiciousPatterns.push('تم الكشف عن هذا الرابط كملف اختبار ضار (EICAR).');
         }
 
-        // 8. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
+        // 9. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
         if (securityLevel === 'danger' || suspiciousPatterns.length >= 1) {
             securityLevel = 'danger';
         } else {
