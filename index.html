@@ -148,7 +148,7 @@
         .warnings-list {
             margin-top: 14px;
             padding: 14px;
-            background-color: #FEE2E2;
+            background-color: #FEE2F2;
             border: 1px solid #FCA5A5;
             border-radius: 10px;
         }
@@ -199,6 +199,40 @@
 </div>
 
 <script>
+    // ********* دالة حساب مسافة ليفنشتاين (Levenshtein Distance) *********
+    function getEditDistance(a, b) {
+      if (a.length === 0) return b.length;
+      if (b.length === 0) return a.length;
+
+      const matrix = [];
+
+      for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+      }
+
+      for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+      }
+
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1, // استبدال
+              matrix[i][j - 1] + 1, // إدخال
+              matrix[i - 1][j] + 1 // حذف
+            );
+          }
+        }
+      }
+
+      return matrix[b.length][a.length];
+    }
+    // *******************************************************************
+
+
     const urlInput = document.getElementById('urlInput');
     const scanButton = document.getElementById('scanButton');
     const resultBox = document.getElementById('resultBox');
@@ -270,42 +304,74 @@
             }
         });
 
-        // 4. *** القاعدة الجديدة: الكشف عن التلاعب بالنطاق (Typosquatting Check) ***
-        const commonDomains = ['youtube.com', 'google.com', 'facebook.com', 'twitter.com', 'instagram.com', 'tiktok.com'];
+        // 4. الكشف الحساس عن التلاعب بالنطاق (Typosquatting Check)
+        const safeDomains = [
+            'youtube.com', 'google.com', 'facebook.com', 'twitter.com', 'instagram.com', 
+            'tiktok.com', 'apple.com', 'amazon.com', 'whatsapp.com', 'github.com', 'microsoft.com'
+        ];
+        
         const domainToCheck = urlDetails.domain.toLowerCase();
+        const cleanDomain = domainToCheck.startsWith('www.') ? domainToCheck.substring(4) : domainToCheck;
 
-        commonDomains.forEach(safeDomain => {
-            // استخدام مسافة Levenshtein (تقدير بسيط) لتحديد التشابه القريب
-            // (هنا نستخدم مقارنة بسيطة للحروف الساكنة لزيادة الحساسية)
-            if (domainToCheck.length >= safeDomain.length - 2 && domainToCheck.length <= safeDomain.length + 2) {
-                 const cleanedDomain = domainToCheck.replace(/[^a-z0-9]/g, '');
-                 const cleanedSafeDomain = safeDomain.replace(/[^a-z0-9]/g, '');
+        for (const safeDomain of safeDomains) {
+            const tldIndex = cleanDomain.lastIndexOf('.');
+            const nameToCheck = tldIndex > 0 ? cleanDomain.substring(0, tldIndex) : cleanDomain;
+            
+            const safeTldIndex = safeDomain.lastIndexOf('.');
+            const safeName = safeTldIndex > 0 ? safeDomain.substring(0, safeTldIndex) : safeDomain;
+            
+            const distance = getEditDistance(nameToCheck, safeName);
 
-                 // مثال على التلاعب: youtobe.com
-                 if (cleanedDomain !== cleanedSafeDomain && cleanedDomain.includes(cleanedSafeDomain.slice(0, 4))) { 
-                    suspiciousPatterns.push(`النطاق قريب جداً من نطاق مشهور (${safeDomain})، قد يكون محاولة للتلاعب (Typosquatting).`);
-                 }
-            }
-        });
-        
-        // 5. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في رابط آمن)
-        const safeDomainList = ['google.com', 'youtube.com', 'tiktok.com', 'github.com'];
-        const isKnownSafeDomain = safeDomainList.some(domain => urlDetails.domain.includes(domain));
-        
-        if (isKnownSafeDomain) {
-            // إذا كان الرابط معروفًا بكونه آمناً ولكنه طويل بشكل مبالغ فيه (علامة على إضافة مسارات مشبوهة)
-            if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('search?q=')) { // نستثني روابط اليوتيوب والبحث العادية الطويلة
-                suspiciousPatterns.push('الرابط معروف (مثل YouTube) ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي أو تتبع.');
+            if (distance === 1 || (distance === 2 && safeName.length > 8)) {
+                suspiciousPatterns.push(`النطاق قريب جداً من نطاق مشهور (${safeDomain}) باختلاف حرف واحد/اثنين، قد يكون محاولة للتلاعب بالنطاق (Typosquatting).`);
+                break; 
             }
         }
         
-        // 6. اختبار الكشف عن رابط EICAR
+        // 5. *** القاعدة الجديدة لسيناريو التلاعب بروابط جوجل (فحص بصمة المعاملات) ***
+        if (urlDetails.domain.includes('google.com') && url.includes('/aclk?')) {
+            // رابط جوجل الإعلاني (aclk) طويل جداً ومعقد
+            
+            // نأخذ الجزء الأول من الرابط الذي يحتوي على المعاملات الرئيسية كـ "بصمة ثابتة"
+            const fixedSignatureStart = '/aclk?sa=L&ai=DChsSEwj58NSUhtuQAxXdf0ECHWxODQkYACICCAEQARoCd3M';
+            
+            // نستخدم هذا الجزء من رابط السيناريو الآمن كنقطة مقارنة (المحاكاة)
+            const safeLinkSegment = url.substring(url.indexOf(fixedSignatureStart), url.indexOf('&cce=2'));
+
+            // استخراج نفس الجزء من الرابط الذي أدخله المستخدم
+            const userLinkSegmentIndex = url.indexOf(fixedSignatureStart);
+            if (userLinkSegmentIndex !== -1) {
+                const userLinkSegment = url.substring(userLinkSegmentIndex, url.indexOf('&cce=2', userLinkSegmentIndex) > 0 ? url.indexOf('&cce=2', userLinkSegmentIndex) : url.length);
+                
+                // هنا نستخدم تقنية مسافة ليفنشتاين لبيان التشابه
+                const distance = getEditDistance(safeLinkSegment, userLinkSegment);
+
+                // إذا كان الاختلاف في عدد كبير من الأحرف (أكثر من 50 حرفاً)، أو إذا كان التغيير في منتصف الرابط (إضافة/حذف)
+                // في سيناريو التلاعب بروابط جوجل، حتى 3 اختلافات تعتبر خطيرة جداً.
+                if (distance > 3) { 
+                    suspiciousPatterns.push('تم الكشف عن تلاعب كبير في معاملات التتبع (Tracking Parameters) على نطاق Google آمن. **(خطر التلاعب بالبصمة)**');
+                }
+            }
+            
+            // ملاحظة: قاعدة فحص الطول (رقم 6) ستقوم بتصنيف أي تغيير عشوائي كخطر في الغالب، لكن هذه القاعدة أدق.
+        }
+        
+        // 6. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في رابط آمن)
+        const isKnownSafeDomain = safeDomains.some(domain => urlDetails.domain.includes(domain));
+        
+        if (isKnownSafeDomain) {
+            if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('search?q=')) {
+                suspiciousPatterns.push('الرابط معروف (نطاق آمن) ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي.');
+            }
+        }
+        
+        // 7. اختبار الكشف عن رابط EICAR
         if (url.includes('wicar.org')) {
             securityLevel = 'danger';
             suspiciousPatterns.push('تم الكشف عن هذا الرابط كملف اختبار ضار (EICAR).');
         }
 
-        // 7. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
+        // 8. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
         if (securityLevel === 'danger' || suspiciousPatterns.length >= 1) {
             securityLevel = 'danger';
         } else {
