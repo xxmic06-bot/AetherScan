@@ -25,8 +25,6 @@
         h1 {
             color: #059669;
             font-size: 2.5em;
-            text-align: center;
-            margin-bottom: 5px;
             font-weight: 800;
         }
         .subtitle {
@@ -186,8 +184,10 @@
 <body>
 
 <div class="container">
-    <h1><i class="fas fa-satellite-dish"></i> AetherScan</h1>
-    <p class="subtitle">فحص متقدم للأمان باستخدام تحليل البنية والميزات</p>
+    <div style="text-align: center;">
+        <h1><i class="fas fa-satellite-dish"></i> AetherScan</h1>
+        <p class="subtitle">فحص متقدم للأمان باستخدام تحليل البنية والميزات</p>
+    </div>
 
     <div class="input-group">
         <input type="url" id="urlInput" placeholder="أدخل الرابط كاملاً هنا..." value="" />
@@ -284,12 +284,15 @@
         
         // ********** هذا الجزء يمثل قوة فحص مشروعك الآن **********
 
-        // القائمة الآمنة (لن يتم فحصها بقواعد الاشتباه بالنطاق، فقط بقواعد الكلمات المفتاحية)
+        // القائمة الموسعة للنطاقات الآمنة جداً (UltraSafe Domains)
         const ultraSafeDomains = [
             'google.com', 'youtube.com', 'facebook.com', 'twitter.com', 'instagram.com', 
             'tiktok.com', 'apple.com', 'amazon.com', 'whatsapp.com', 'github.com', 'microsoft.com',
-            'speedtest.net', 'wikipedia.org', 'linkedin.com', 'reddit.com',
-            'cisco.com', 'gov.sa', 'edu.sa', 'bing.com' // إضافة نطاقات حكومية وشائعة
+            'speedtest.net', 'wikipedia.org', 'linkedin.com', 'reddit.com', 'cisco.com', 
+            'bing.com', 'yahoo.com', 'netflix.com', 'spotify.com', 'paypal.com', 'ebay.com',
+            'adobe.com', 'oracle.com', 'ibm.com', 'samsung.com', 'huawei.com', 'dell.com',
+            'hp.com', 'alipay.com', 'tencent.com', 'baidu.com', 'weibo.com', 'vk.com',
+            'gov.sa', 'edu.sa', 'saudibanks.sa', 'stc.com.sa', 'mobily.com.sa', 'zeker.sa'
         ];
         
         const domainToCheck = urlDetails.domain.toLowerCase();
@@ -318,51 +321,55 @@
             }
         });
 
-        // 4. *** 🆕 القاعدة الرئيسية: الاشتباه بالنطاقات غير المدرجة (بما فيها التلاعب) ***
-        if (!isUltraSafe) { // إذا لم يكن النطاق من القائمة الآمنة جداً
+        // 4. *** القاعدة الرئيسية: الاشتباه بالنطاقات غير المدرجة (بما فيها التلاعب) ***
+        let isTyposquattingDetected = false;
+
+        // 4-أ. فحص التلاعب بالنطاق (Typosquatting) على القائمة الموسعة
+        for (const safeDomain of ultraSafeDomains) {
+            const tldIndex = cleanDomain.lastIndexOf('.');
+            const nameToCheck = tldIndex > 0 ? cleanDomain.substring(0, tldIndex) : cleanDomain;
             
-            let isTyposquattingDetected = false;
+            const safeTldIndex = safeDomain.lastIndexOf('.');
+            const safeName = safeTldIndex > 0 ? safeDomain.substring(0, safeTldIndex) : safeDomain;
+            
+            const distance = getEditDistance(nameToCheck, safeName);
 
-            // 4-أ. فحص التلاعب بالنطاق (Typosquatting)
-            for (const safeDomain of ultraSafeDomains) {
-                const tldIndex = cleanDomain.lastIndexOf('.');
-                const nameToCheck = tldIndex > 0 ? cleanDomain.substring(0, tldIndex) : cleanDomain;
-                
-                const safeTldIndex = safeDomain.lastIndexOf('.');
-                const safeName = safeTldIndex > 0 ? safeDomain.substring(0, safeTldIndex) : safeDomain;
-                
-                const distance = getEditDistance(nameToCheck, safeName);
-
-                // إذا كان الاختلاف حرف واحد، نعتبره تلاعباً
-                if (distance === 1) { 
-                    suspiciousPatterns.push(`النطاق غير مطابق (قريب جداً) من نطاق مشهور (${safeDomain}) باختلاف حرف واحد، يُحتمل أن يكون تلاعباً (Typosquatting).`);
-                    isTyposquattingDetected = true;
-                    break;
-                }
+            // تحقق من المطابقة التامة (نطاق آمن ومطابق)
+            if (cleanDomain === safeDomain) {
+                 isTyposquattingDetected = false;
+                 break; 
             }
 
-            // 4-ب. فحص الاشتباه في النطاق نفسه (لأي نطاق غير مشهور)
-            if (!isTyposquattingDetected) {
-                const domainNoTLD = cleanDomain.substring(0, cleanDomain.lastIndexOf('.'));
-                const digitCount = (domainNoTLD.match(/\d/g) || []).length;
-                const hyphenCount = (domainNoTLD.match(/-/g) || []).length;
-
-                // إذا كان النطاق يحتوي على أي رقم (باستثناء الأرقام المحددة في القائمة الآمنة مثل 1010data.com)
-                if (digitCount > 0) {
-                    suspiciousPatterns.push('النطاق يحتوي على أرقام في الاسم، وهي علامة شائعة في نطاقات الاحتيال غير المعروفة.');
-                }
-                
-                // إذا كان النطاق يحتوي على شرطات
-                if (hyphenCount > 0) {
-                     suspiciousPatterns.push('النطاق يحتوي على شرطات (-)، وهي علامة شائعة في نطاقات الاحتيال لإخفاء الكلمات.');
-                }
-                
-                // إذا كان النطاق طويلاً بشكل مبالغ فيه
-                if (cleanDomain.length > 35) {
-                     suspiciousPatterns.push('النطاق الأساسي طويل جداً (أكثر من 35 حرفاً).');
-                }
+            // تحقق من التلاعب بالنطاق (يختلف بحرف واحد)
+            if (distance === 1) { 
+                suspiciousPatterns.push(`النطاق غير مطابق (قريب جداً) من نطاق مشهور (${safeDomain}) باختلاف حرف واحد، يُحتمل أن يكون تلاعباً (Typosquatting).`);
+                isTyposquattingDetected = true;
+                break; 
             }
         }
+
+        // 4-ب. فحص الاشتباه في النطاق نفسه (لأي نطاق غير مشهور أو غير مطابق)
+        if (!isUltraSafe && !isTyposquattingDetected) { 
+            const domainNoTLD = cleanDomain.substring(0, cleanDomain.lastIndexOf('.'));
+            const digitCount = (domainNoTLD.match(/\d/g) || []).length;
+            const hyphenCount = (domainNoTLD.match(/-/g) || []).length;
+
+            // إذا كان النطاق يحتوي على أي رقم 
+            if (digitCount > 0) {
+                suspiciousPatterns.push('النطاق يحتوي على أرقام في الاسم، وهي علامة شائعة في نطاقات الاحتيال غير المعروفة.');
+            }
+            
+            // إذا كان النطاق يحتوي على شرطات
+            if (hyphenCount > 0) {
+                 suspiciousPatterns.push('النطاق يحتوي على شرطات (-)، وهي علامة شائعة في نطاقات الاحتيال لإخفاء الكلمات.');
+            }
+            
+            // إذا كان النطاق طويلاً بشكل مبالغ فيه
+            if (cleanDomain.length > 35) {
+                 suspiciousPatterns.push('النطاق الأساسي طويل جداً (أكثر من 35 حرفاً).');
+            }
+        }
+
         
         // 5. قاعدة فحص بصمة المعاملات (لروابط جوجل الطويلة)
         if (domainToCheck.includes('google.com') && url.includes('/aclk?')) {
@@ -376,7 +383,6 @@
 
                 const distance = getEditDistance(safeLinkSegment, userLinkSegment);
 
-                // أي تغيير يتجاوز 3 أحرف على رابط إعلانات جوجل يُعتبر تلاعباً
                 if (distance > 3) { 
                     suspiciousPatterns.push('تم الكشف عن تلاعب كبير في معاملات التتبع (Tracking Parameters) على نطاق Google آمن. **(خطر التلاعب بالبصمة)**');
                 }
@@ -384,10 +390,9 @@
         }
         
         // 6. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في رابط آمن)
-        // هذا الفحص يكتشف التلاعب في مسارات النطاقات الآمنة (مثل إضافة /virus-scan إلى youtube.com)
+        // هذا الفحص يكتشف التلاعب في مسارات النطاقات الآمنة
         if (isUltraSafe) {
-            if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('search?q=')) {
-                // إذا كان نطاقاً آمناً لكن المسار طويل جداً وليس مسار بحث/فيديو
+            if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('search?q=') && !url.includes('google.com/search')) {
                 suspiciousPatterns.push('الرابط معروف (نطاق آمن) ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي أو تتبع.');
             }
         }
