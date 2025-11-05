@@ -304,15 +304,18 @@
             }
         });
 
-        // 4. الكشف الحساس عن التلاعب بالنطاق (Typosquatting Check)
+        // 4. الكشف الحساس عن التلاعب بالنطاق (Typosquatting Check) - القائمة المشهورة
         const safeDomains = [
             'youtube.com', 'google.com', 'facebook.com', 'twitter.com', 'instagram.com', 
-            'tiktok.com', 'apple.com', 'amazon.com', 'whatsapp.com', 'github.com', 'microsoft.com'
+            'tiktok.com', 'apple.com', 'amazon.com', 'whatsapp.com', 'github.com', 'microsoft.com',
+            'speedtest.net', 'wikipedia.org', 'linkedin.com', 'reddit.com'
         ];
         
         const domainToCheck = urlDetails.domain.toLowerCase();
         const cleanDomain = domainToCheck.startsWith('www.') ? domainToCheck.substring(4) : domainToCheck;
 
+        let isDomainMatchFound = false;
+        
         for (const safeDomain of safeDomains) {
             const tldIndex = cleanDomain.lastIndexOf('.');
             const nameToCheck = tldIndex > 0 ? cleanDomain.substring(0, tldIndex) : cleanDomain;
@@ -322,41 +325,60 @@
             
             const distance = getEditDistance(nameToCheck, safeName);
 
+            // تحقق من المطابقة التامة
+            if (cleanDomain === safeDomain) {
+                 isDomainMatchFound = true; // تم العثور على تطابق تام مع نطاق آمن
+                 break;
+            }
+
+            // تحقق من التلاعب بالنطاق
             if (distance === 1 || (distance === 2 && safeName.length > 8)) {
                 suspiciousPatterns.push(`النطاق قريب جداً من نطاق مشهور (${safeDomain}) باختلاف حرف واحد/اثنين، قد يكون محاولة للتلاعب بالنطاق (Typosquatting).`);
+                isDomainMatchFound = true; // لا نعتبره خطراً حتى نصل إلى القاعدة 8
                 break; 
             }
         }
         
-        // 5. *** القاعدة الجديدة لسيناريو التلاعب بروابط جوجل (فحص بصمة المعاملات) ***
+        // 5. قاعدة فحص بصمة المعاملات (لروابط جوجل الطويلة)
         if (urlDetails.domain.includes('google.com') && url.includes('/aclk?')) {
-            // رابط جوجل الإعلاني (aclk) طويل جداً ومعقد
+            const safeLinkSegment = 'DChsSEwj58NSUhtuQAxXdf0ECHWxODQkYACICCAEQARoCd3M'; // جزء من البصمة التي يفترض أن تبقى ثابتة
             
-            // نأخذ الجزء الأول من الرابط الذي يحتوي على المعاملات الرئيسية كـ "بصمة ثابتة"
-            const fixedSignatureStart = '/aclk?sa=L&ai=DChsSEwj58NSUhtuQAxXdf0ECHWxODQkYACICCAEQARoCd3M';
+            const startAnchor = url.indexOf('?sa=L&ai=');
+            const endAnchor = url.indexOf('&co=1'); 
             
-            // نستخدم هذا الجزء من رابط السيناريو الآمن كنقطة مقارنة (المحاكاة)
-            const safeLinkSegment = url.substring(url.indexOf(fixedSignatureStart), url.indexOf('&cce=2'));
+            if (startAnchor !== -1 && endAnchor !== -1 && endAnchor > startAnchor) {
+                const userLinkSegment = url.substring(startAnchor + 9, endAnchor);
 
-            // استخراج نفس الجزء من الرابط الذي أدخله المستخدم
-            const userLinkSegmentIndex = url.indexOf(fixedSignatureStart);
-            if (userLinkSegmentIndex !== -1) {
-                const userLinkSegment = url.substring(userLinkSegmentIndex, url.indexOf('&cce=2', userLinkSegmentIndex) > 0 ? url.indexOf('&cce=2', userLinkSegmentIndex) : url.length);
-                
-                // هنا نستخدم تقنية مسافة ليفنشتاين لبيان التشابه
                 const distance = getEditDistance(safeLinkSegment, userLinkSegment);
 
-                // إذا كان الاختلاف في عدد كبير من الأحرف (أكثر من 50 حرفاً)، أو إذا كان التغيير في منتصف الرابط (إضافة/حذف)
-                // في سيناريو التلاعب بروابط جوجل، حتى 3 اختلافات تعتبر خطيرة جداً.
                 if (distance > 3) { 
                     suspiciousPatterns.push('تم الكشف عن تلاعب كبير في معاملات التتبع (Tracking Parameters) على نطاق Google آمن. **(خطر التلاعب بالبصمة)**');
                 }
             }
-            
-            // ملاحظة: قاعدة فحص الطول (رقم 6) ستقوم بتصنيف أي تغيير عشوائي كخطر في الغالب، لكن هذه القاعدة أدق.
         }
         
-        // 6. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في رابط آمن)
+        // 6. *** 🆕 القاعدة الجديدة: الاشتباه العام بالنطاقات غير المدرجة ***
+        if (!isDomainMatchFound) { // إذا لم يكن النطاق مطابقاً لأي نطاق آمن في القائمة
+            // 6-أ. فحص النطاق المحمّل بأرقام أو شرطات
+            const domainNoTLD = cleanDomain.substring(0, cleanDomain.lastIndexOf('.'));
+            const digitCount = (domainNoTLD.match(/\d/g) || []).length;
+            const hyphenCount = (domainNoTLD.match(/-/g) || []).length;
+
+            if (digitCount >= 3) {
+                 suspiciousPatterns.push('النطاق يحتوي على عدد كبير من الأرقام في الاسم، وهي علامة شائعة في نطاقات الاحتيال الجديدة.');
+            }
+            if (hyphenCount >= 2) {
+                 suspiciousPatterns.push('النطاق يحتوي على عدد كبير من الشرطات (-)، وهي علامة شائعة في نطاقات الاحتيال الجديدة.');
+            }
+
+            // 6-ب. فحص طول النطاق الكلي
+            if (cleanDomain.length > 30) {
+                 suspiciousPatterns.push('النطاق الأساسي طويل جداً (أكثر من 30 حرفاً) وقد يكون محاولة لإخفاء هوية الموقع.');
+            }
+        }
+
+        
+        // 7. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في رابط آمن)
         const isKnownSafeDomain = safeDomains.some(domain => urlDetails.domain.includes(domain));
         
         if (isKnownSafeDomain) {
@@ -365,13 +387,13 @@
             }
         }
         
-        // 7. اختبار الكشف عن رابط EICAR
+        // 8. اختبار الكشف عن رابط EICAR
         if (url.includes('wicar.org')) {
             securityLevel = 'danger';
             suspiciousPatterns.push('تم الكشف عن هذا الرابط كملف اختبار ضار (EICAR).');
         }
 
-        // 8. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
+        // 9. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
         if (securityLevel === 'danger' || suspiciousPatterns.length >= 1) {
             securityLevel = 'danger';
         } else {
