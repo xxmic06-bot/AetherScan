@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AetherScan - فاحص الروابط الأكثر حساسية</title>
+    <title>AetherScan - فاحص الروابط النهائي</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         /* (*** الأنماط CSS كما هي دون تغيير ***) */
@@ -23,7 +23,7 @@
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
         }
         h1 {
-            color: #DC2626; /* جعل العنوان أحمر ليعكس الحساسية القصوى */
+            color: #059669;
             font-size: 2.5em;
             font-weight: 800;
         }
@@ -48,11 +48,11 @@
             transition: border-color 0.3s;
         }
         #urlInput:focus {
-            border-color: #DC2626; 
+            border-color: #059669;
             outline: none;
         }
         #scanButton {
-            background-color: #DC2626; /* زر بلون الخطر */
+            background-color: #059669;
             color: white;
             border: none;
             padding: 0 30px;
@@ -66,7 +66,7 @@
             gap: 10px;
         }
         #scanButton:hover {
-            background-color: #B91C1C;
+            background-color: #047857;
         }
         #scanButton:active {
             transform: scale(0.98);
@@ -185,13 +185,13 @@
 
 <div class="container">
     <div style="text-align: center;">
-        <h1><i class="fas fa-biohazard"></i> AetherScan Extreme</h1>
-        <p class="subtitle">نظام كشف الأمان بحساسية قصوى (أي تغيير يعتبر خطر)</p>
+        <h1><i class="fas fa-satellite-dish"></i> AetherScan</h1>
+        <p class="subtitle">فحص متقدم للأمان باستخدام تحليل البنية والميزات</p>
     </div>
 
     <div class="input-group">
         <input type="url" id="urlInput" placeholder="أدخل الرابط كاملاً هنا..." value="" />
-        <button id="scanButton"><i class="fas fa-skull-crossbones"></i> فحص عدواني</button>
+        <button id="scanButton"><i class="fas fa-search"></i> فحص متقدم</button>
     </div>
 
     <div id="resultBox" class="result-box">
@@ -241,8 +241,7 @@
 
     function parseUrl(url) {
         try {
-            // إضافة https:// افتراضياً لتحليل الروابط دون بروتوكول
-            const link = url.startsWith('http') ? url : `https://${url}`;
+            const link = url.startsWith('http') ? url : `http://${url}`;
             const parsed = new URL(link);
             return {
                 fullUrl: url,
@@ -277,7 +276,7 @@
         resultBox.style.display = 'none';
 
         // ---------------------------------------------------------------------------------
-        // *** 🔴 المنطقة الحرجة: منطق الفحص الأكثر عدوانية 🔴 ***
+        // *** 🔴 المنطقة الحرجة: منطق الفحص القوي (محاكاة/دمج Rork) 🔴 ***
         // ---------------------------------------------------------------------------------
 
         let securityLevel = 'safe'; 
@@ -291,7 +290,8 @@
             'tiktok.com', 'apple.com', 'amazon.com', 'whatsapp.com', 'github.com', 'microsoft.com',
             'speedtest.net', 'wikipedia.org', 'linkedin.com', 'reddit.com', 'cisco.com', 
             'bing.com', 'yahoo.com', 'netflix.com', 'spotify.com', 'paypal.com', 'ebay.com',
-            'adobe.com', 'oracle.com', 'ibm.com', 'samsung.com', 'dell.com', 'hp.com',
+            'adobe.com', 'oracle.com', 'ibm.com', 'samsung.com', 'huawei.com', 'dell.com',
+            'hp.com', 'alipay.com', 'tencent.com', 'baidu.com', 'weibo.com', 'vk.com',
             'gov.sa', 'edu.sa', 'saudibanks.sa', 'stc.com.sa', 'mobily.com.sa', 'zeker.sa', 
             'absher.sa', 'elm.sa', 'mof.gov.sa', 'cma.org.sa', 'sama.gov.sa', 'moe.gov.sa'
         ];
@@ -299,7 +299,7 @@
         const domainToCheck = urlDetails.domain.toLowerCase();
         const cleanDomain = domainToCheck.startsWith('www.') ? domainToCheck.substring(4) : domainToCheck;
         
-        const isExactMatch = ultraSafeDomains.some(d => cleanDomain === d);
+        const isUltraSafe = ultraSafeDomains.some(d => cleanDomain === d);
 
 
         // 1. فحص البروتوكول (HTTP غير مشفر يعتبر مؤشر خطر كافٍ)
@@ -322,9 +322,8 @@
             }
         });
 
-        // 4. *** قاعدة التلاعب بالنطاق القصوى + الاشتباه العام ***
-        
-        // 4-أ. فحص التلاعب بالنطاق (Typosquatting)
+        // 4. *** قاعدة التلاعب بالنطاق (Typosquatting) القصوى ***
+        // هذه القاعدة يجب أن تكون حساسة جداً لتلبية السيناريو الذي ذكرته (speeedtest.net)
         let isTyposquattingDetected = false;
 
         for (const safeDomain of ultraSafeDomains) {
@@ -338,49 +337,35 @@
 
             // الشرط الحاسم: إذا كان الاختلاف حرف واحد (مسافة = 1)، فإنه خطر بنسبة 100%
             if (distance === 1) { 
-                suspiciousPatterns.push(`النطاق قريب جداً من نطاق مشهور (${safeDomain}) باختلاف حرف واحد، وهو مؤشر قاطع على التلاعب بالنطاق (Typosquatting).`);
+                suspiciousPatterns.push(`النطاق قريب جداً من نطاق مشهور (${safeDomain}) باختلاف حرف واحد، وهو مؤشر قوي على التلاعب بالنطاق (Typosquatting).`);
                 isTyposquattingDetected = true;
-                securityLevel = 'danger'; 
+                securityLevel = 'danger'; // يتم تعيينه كخطر فوري لزيادة القوة
                 break; 
             }
         }
 
-        // 4-ب. *** القاعدة الجديدة والحاسمة: أي نطاق غير مطابق بالضبط يعتبر مشبوهًا ***
-        // إذا لم يكن النطاق مطابقاً تماماً لأحد النطاقات الآمنة في القائمة
-        if (!isExactMatch) { 
-             const domainNoTLD = cleanDomain.substring(0, cleanDomain.lastIndexOf('.'));
-             const digitCount = (domainNoTLD.match(/\d/g) || []).length;
-             const hyphenCount = (domainNoTLD.match(/-/g) || []).length;
-             const suspiciousChars = /[^a-z0-9-.]/.test(cleanDomain);
 
-             // إذا لم يتم اكتشاف التلاعب المباشر (4-أ) لكنه ليس مطابقاً
-             if (!isTyposquattingDetected) {
-                // نرفع درجة الاشتباه بشكل عام لأي نطاق غير معروف 
-                if (digitCount > 0) {
-                    suspiciousPatterns.push('النطاق غير معروف ويحتوي على أرقام في الاسم.');
-                }
-                
-                if (hyphenCount > 0) {
-                     suspiciousPatterns.push('النطاق غير معروف ويحتوي على شرطات (-).');
-                }
-                
-                if (cleanDomain.length > 35) {
-                     suspiciousPatterns.push('النطاق الأساسي طويل جداً (أكثر من 35 حرفاً) ومجهول.');
-                }
-             }
+        // 5. *** قاعدة الاشتباه العام بالنطاقات غير المدرجة (تغطية كل الروابط الأخرى) ***
+        if (!isUltraSafe && !isTyposquattingDetected) { 
+            const domainNoTLD = cleanDomain.substring(0, cleanDomain.lastIndexOf('.'));
+            const digitCount = (domainNoTLD.match(/\d/g) || []).length;
+            const hyphenCount = (domainNoTLD.match(/-/g) || []).length;
 
-             // الكشف عن رموز غير مسموحة (مثل الرموز المضللة - Punycode characters)
-             if (suspiciousChars) {
-                 suspiciousPatterns.push('تم الكشف عن رموز أو أحرف غير قياسية في النطاق (قد تكون رموز Punycode أو Unicode للتضليل).');
-             }
-
-             // *** القاعدة المطلوبة: جعل أي نطاق غير مطابق بالضبط مشبوهًا لوجود أي علامة ***
-             if (suspiciousPatterns.length > 0) {
-                securityLevel = 'danger'; 
-             }
+            if (digitCount > 0) {
+                suspiciousPatterns.push('النطاق يحتوي على أرقام في الاسم، وهي علامة شائعة في نطاقات الاحتيال غير المعروفة.');
+            }
+            
+            if (hyphenCount > 0) {
+                 suspiciousPatterns.push('النطاق يحتوي على شرطات (-)، وهي علامة شائعة في نطاقات الاحتيال لإخفاء الكلمات.');
+            }
+            
+            if (cleanDomain.length > 35) {
+                 suspiciousPatterns.push('النطاق الأساسي طويل جداً (أكثر من 35 حرفاً).');
+            }
         }
+
         
-        // 5. قاعدة فحص بصمة المعاملات (لروابط جوجل الطويلة)
+        // 6. قاعدة فحص بصمة المعاملات (لروابط جوجل الطويلة - لسيناريو سيسكو الأول)
         if (domainToCheck.includes('google.com') && url.includes('/aclk?')) {
             const safeLinkSegment = 'DChsSEwj58NSUhtuQAxXdf0ECHWxODQkYACICCAEQARoCd3M';
             
@@ -394,31 +379,29 @@
 
                 if (distance > 3) { 
                     suspiciousPatterns.push('تم الكشف عن تلاعب كبير في معاملات التتبع (Tracking Parameters) على نطاق Google آمن. **(خطر التلاعب بالبصمة)**');
-                    securityLevel = 'danger'; 
+                    securityLevel = 'danger'; // يتم تعيينه كخطر فوري لزيادة القوة
                 }
             }
         }
         
-        // 6. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في مسار رابط آمن)
-        // هذا الفحص يكتشف التلاعب في مسارات النطاقات الآمنة (مثل إضافة /virus-scan إلى youtube.com)
-        if (isExactMatch) {
+        // 7. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في مسار رابط آمن)
+        if (isUltraSafe) {
             if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('search?q=') && !url.includes('google.com/search')) {
-                suspiciousPatterns.push('الرابط مطابق لنطاق آمن ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي.');
+                suspiciousPatterns.push('الرابط معروف (نطاق آمن) ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي أو تتبع.');
             }
         }
         
-        // 7. اختبار الكشف عن رابط EICAR
+        // 8. اختبار الكشف عن رابط EICAR
         if (url.includes('wicar.org')) {
             securityLevel = 'danger';
             suspiciousPatterns.push('تم الكشف عن هذا الرابط كملف اختبار ضار (EICAR).');
         }
 
-        // 8. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
+        // 9. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
         if (securityLevel === 'danger' || suspiciousPatterns.length >= 1) {
             securityLevel = 'danger';
         } else {
-            // هذا يعني أن الرابط مطابق 100% لأحد الـ ultraSafeDomains ولا يحتوي على أي مؤشر خطر آخر.
-            securityLevel = 'safe'; 
+            securityLevel = 'safe';
         } 
         
         // ********** نهاية منطق قوة فحص مشروعك **********
@@ -430,7 +413,7 @@
 
         displayResult(securityLevel, urlDetails, suspiciousPatterns);
         scanButton.disabled = false;
-        scanButton.innerHTML = '<i class="fas fa-skull-crossbones"></i> فحص عدواني';
+        scanButton.innerHTML = '<i class="fas fa-search"></i> فحص متقدم';
     }
 
     function displayResult(level, details, patterns) {
@@ -441,10 +424,10 @@
         let statusText;
 
         if (level === 'safe') {
-            iconHtml = '<i class="fas fa-shield-alt"></i>';
+            iconHtml = '<i class="fas fa-check-circle"></i>';
             statusText = 'آمن تماماً';
         } else {
-            iconHtml = '<i class="fas fa-hand-paper"></i>';
+            iconHtml = '<i class="fas fa-exclamation-triangle"></i>';
             statusText = 'خطر / مشبوه';
         }
         
@@ -457,10 +440,6 @@
                     <ul>${listItems}</ul>
                 </div>
             `;
-        } else if (level === 'safe') {
-            warningsHtml = `<div class="warnings-list safe" style="border-color:#059669; background-color:#ECFDF5;">
-                <p class="warnings-title" style="color:#059669;">✅ تقييم الأمان: مطابق تماماً لنطاق آمن ولا يوجد اشتباه.</p>
-            </div>`;
         }
 
         resultBox.innerHTML = `
