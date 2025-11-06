@@ -242,7 +242,7 @@
     function parseUrl(url) {
         try {
             // إضافة https:// افتراضياً لتحليل الروابط دون بروتوكول
-            const link = url.startsWith('http') ? url : https://${url};
+            const link = url.startsWith('http') ? url : `https://${url}`;
             const parsed = new URL(link);
             return {
                 fullUrl: url,
@@ -304,12 +304,12 @@
 
         // 1. فحص البروتوكول (HTTP غير مشفر يعتبر مؤشر خطر كافٍ)
         if (urlDetails.protocol === 'http') {
-            suspiciousPatterns.push('الرابط غير مشفّر (HTTP) ويسهل اعتراض بياناته. *(خطر عالي)*');
+            suspiciousPatterns.push('الرابط غير مشفّر (HTTP) ويسهل اعتراض بياناته. **(خطر عالي)**');
         }
 
         // 2. فحص الاختصار (يعتبر مؤشر خطر كافٍ لوحده)
         if (urlDetails.isShortened) {
-            suspiciousPatterns.push('الرابط مُختصر، مما يُصعّب التحقق من الوجهة النهائية. *(خطر عالي)*');
+            suspiciousPatterns.push('الرابط مُختصر، مما يُصعّب التحقق من الوجهة النهائية. **(خطر عالي)**');
         }
 
         // 3. فحص الكلمات المفتاحية الشائعة في الاحتيال والبرامج الضارة (Phishing/Malware)
@@ -318,7 +318,7 @@
         
         suspiciousWords.forEach(word => {
             if (lowerCaseUrl.includes(word)) {
-                suspiciousPatterns.push(الرابط يحتوي على كلمة مفتاحية مشبوهة: "${word}".);
+                suspiciousPatterns.push(`الرابط يحتوي على كلمة مفتاحية مشبوهة: "${word}".`);
             }
         });
 
@@ -338,7 +338,7 @@
 
             // الشرط الحاسم: إذا كان الاختلاف حرف واحد (مسافة = 1)، فإنه خطر بنسبة 100%
             if (distance === 1) { 
-                suspiciousPatterns.push(النطاق قريب جداً من نطاق مشهور (${safeDomain}) باختلاف حرف واحد، وهو مؤشر قاطع على التلاعب بالنطاق (Typosquatting).);
+                suspiciousPatterns.push(`النطاق قريب جداً من نطاق مشهور (${safeDomain}) باختلاف حرف واحد، وهو مؤشر قاطع على التلاعب بالنطاق (Typosquatting).`);
                 isTyposquattingDetected = true;
                 securityLevel = 'danger'; 
                 break; 
@@ -393,7 +393,7 @@
                 const distance = getEditDistance(safeLinkSegment, userLinkSegment);
 
                 if (distance > 3) { 
-                    suspiciousPatterns.push('تم الكشف عن تلاعب كبير في معاملات التتبع (Tracking Parameters) على نطاق Google آمن. *(خطر التلاعب بالبصمة)*');
+                    suspiciousPatterns.push('تم الكشف عن تلاعب كبير في معاملات التتبع (Tracking Parameters) على نطاق Google آمن. **(خطر التلاعب بالبصمة)**');
                     securityLevel = 'danger'; 
                 }
             }
@@ -450,7 +450,7 @@
         
         let warningsHtml = '';
         if (patterns.length > 0) {
-            const listItems = patterns.map(p => <li>${p}</li>).join('');
+            const listItems = patterns.map(p => `<li>${p}</li>`).join('');
             warningsHtml = `
                 <div class="warnings-list">
                     <p class="warnings-title">🔴 تم اكتشاف (${patterns.length}) مؤشر خطر:</p>
