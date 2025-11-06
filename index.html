@@ -1,478 +1,318 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AetherScan - فاحص الروابط النهائي</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <style>
-        /* (*** الأنماط CSS كما هي دون تغيير ***) */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #F8FAFC;
-            color: #1F2937;
-            text-align: right;
-            padding: 20px;
-        }
-        .container {
-            max-width: 700px;
-            margin: 40px auto;
-            background-color: #ffffff;
-            padding: 40px;
-            border-radius: 24px;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #059669;
-            font-size: 2.5em;
-            font-weight: 800;
-        }
-        .subtitle {
-            text-align: center;
-            color: #6B7280;
-            margin-bottom: 30px;
-            font-size: 1.1em;
-        }
-        .input-group {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        #urlInput {
-            flex-grow: 1;
-            padding: 18px;
-            border: 2px solid #D1D5DB;
-            border-radius: 12px;
-            font-size: 17px;
-            text-align: right;
-            transition: border-color 0.3s;
-        }
-        #urlInput:focus {
-            border-color: #059669;
-            outline: none;
-        }
-        #scanButton {
-            background-color: #059669;
-            color: white;
-            border: none;
-            padding: 0 30px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: 700;
-            transition: background-color 0.3s, transform 0.1s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        #scanButton:hover {
-            background-color: #047857;
-        }
-        #scanButton:active {
-            transform: scale(0.98);
-        }
-        #scanButton:disabled {
-            background-color: #9CA3AF;
-            cursor: not-allowed;
-        }
-        .result-box {
-            padding: 25px;
-            border-radius: 16px;
-            margin-top: 25px;
-            animation: fadeIn 0.6s ease-out;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            display: none;
-        }
-        .result-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        .result-status {
-            font-size: 1.8em;
-            font-weight: 800;
-        }
-        .result-url {
-            font-size: 1em;
-            color: #6B7280;
-            direction: ltr;
-            text-align: left;
-            word-break: break-all;
-            margin-bottom: 15px;
-        }
-        .safe {
-            background-color: #ECFDF5;
-            border: 3px solid #10B981;
-        }
-        .safe .result-status {
-            color: #059669;
-        }
-        .safe i {
-            color: #059669;
-        }
-        .danger {
-            background-color: #FEF2F2;
-            border: 3px solid #EF4444;
-        }
-        .danger .result-status {
-            color: #DC2626;
-        }
-        .danger i {
-            color: #DC2626;
-        }
-        .details-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .detail-item {
-            background-color: #F3F4F6;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 0.95em;
-        }
-        .detail-label {
-            color: #6B7280;
-            font-weight: 600;
-            margin-bottom: 5px;
-            display: block;
-        }
-        .detail-value {
-            font-weight: 700;
-            color: #1F2937;
-        }
-        .warnings-list {
-            margin-top: 14px;
-            padding: 14px;
-            background-color: #FEE2F2;
-            border: 1px solid #FCA5A5;
-            border-radius: 10px;
-        }
-        .warnings-title {
-            color: #DC2626;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-        .warnings-list ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        .warnings-list li {
-            color: #991B1B;
-            margin-bottom: 8px;
-            position: relative;
-            padding-right: 15px;
-        }
-        .warnings-list li::before {
-            content: '•';
-            color: #DC2626;
-            font-size: 1.2em;
-            position: absolute;
-            right: 0;
-            top: 0;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherScan</title>     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        /* (*** الأنماط CSS كما هي دون تغيير ***) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #F8FAFC;
+            color: #1F2937;
+            text-align: right;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #059669;
+            font-size: 2.5em;
+            font-weight: 800;
+        }
+        .subtitle {
+            text-align: center;
+            color: #6B7280;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        #urlInput {
+            flex-grow: 1;
+            padding: 18px;
+            border: 2px solid #D1D5DB;
+            border-radius: 12px;
+            font-size: 17px;
+            text-align: right;
+            transition: border-color 0.3s;
+        }
+        #urlInput:focus {
+            border-color: #059669;
+            outline: none;
+        }
+        #scanButton {
+            background-color: #059669;
+            color: white;
+            border: none;
+            padding: 0 30px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 700;
+            transition: background-color 0.3s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #scanButton:hover {
+            background-color: #047857;
+        }
+        #scanButton:active {
+            transform: scale(0.98);
+        }
+        #scanButton:disabled {
+            background-color: #9CA3AF;
+            cursor: not-allowed;
+        }
+        .result-box {
+            padding: 25px;
+            border-radius: 16px;
+            margin-top: 25px;
+            animation: fadeIn 0.6s ease-out;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            display: none;
+        }
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .result-status {
+            font-size: 1.8em;
+            font-weight: 800;
+        }
+        .result-url {
+            font-size: 1em;
+            color: #6B7280;
+            direction: ltr;
+            text-align: left;
+            word-break: break-all;
+            margin-bottom: 15px;
+        }
+        .safe {
+            background-color: #ECFDF5;
+            border: 3px solid #10B981;
+        }
+        .safe .result-status {
+            color: #059669;
+        }
+        .safe i {
+            color: #059669;
+        }
+        .danger {
+            background-color: #FEF2F2;
+            border: 3px solid #EF4444;
+        }
+        .danger .result-status {
+            color: #DC2626;
+        }
+        .danger i {
+            color: #DC2626;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .detail-item {
+            background-color: #F3F4F6;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.95em;
+        }
+        .detail-label {
+            color: #6B7280;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .detail-value {
+            font-weight: 700;
+            color: #1F2937;
+        }
+        .warnings-list {
+            margin-top: 14px;
+            padding: 14px;
+            background-color: #FEE2F2;
+            border: 1px solid #FCA5A5;
+            border-radius: 10px;
+        }
+        .warnings-title {
+            color: #DC2626;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .warnings-list ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .warnings-list li {
+            color: #991B1B;
+            margin-bottom: 8px;
+            position: relative;
+            padding-right: 15px;
+        }
+        .warnings-list li::before {
+            content: '•';
+            color: #DC2626;
+            font-size: 1.2em;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="text-align: center;">
-        <h1><i class="fas fa-satellite-dish"></i> AetherScan</h1>
-        <p class="subtitle">فحص متقدم للأمان باستخدام تحليل البنية والميزات</p>
-    </div>
+    <div style="text-align: center;">
+        <h1><i class="fas fa-satellite-dish"></i> AetherScan</h1>
+        <p class="subtitle">فحص متقدم للأمان باستخدام تحليل البنية والميزات</p>
+    </div>
 
-    <div class="input-group">
-        <input type="url" id="urlInput" placeholder="أدخل الرابط كاملاً هنا..." value="" />
-        <button id="scanButton"><i class="fas fa-search"></i> فحص متقدم</button>
-    </div>
+    <div class="input-group">
+        <input type="url" id="urlInput" placeholder="أدخل الرابط كاملاً هنا..." value="" />
+        <button id="scanButton"><i class="fas fa-search"></i> فحص متقدم</button>
+    </div>
 
-    <div id="resultBox" class="result-box">
-        </div>
+    <div id="resultBox" class="result-box">
+        </div>
 </div>
 
 <script>
-    // ********* دالة حساب مسافة ليفنشتاين (Levenshtein Distance) *********
-    function getEditDistance(a, b) {
-      if (a.length === 0) return b.length;
-      if (b.length === 0) return a.length;
+    // ********* دالة حساب مسافة ليفنشتاين (Levenshtein Distance) *********
+    function getEditDistance(a, b) {
+      if (a.length === 0) return b.length;
+      if (b.length === 0) return a.length;
 
-      const matrix = [];
+      const matrix = [];
 
-      for (let i = 0; i <= b.length; i++) {
-        matrix[i] = [i];
-      }
+      for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+      }
 
-      for (let j = 0; j <= a.length; j++) {
-        matrix[0][j] = j;
-      }
+      for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+      }
 
-      for (let i = 1; i <= b.length; i++) {
-        for (let j = 1; j <= a.length; j++) {
-          if (b.charAt(i - 1) === a.charAt(j - 1)) {
-            matrix[i][j] = matrix[i - 1][j - 1];
-          } else {
-            matrix[i][j] = Math.min(
-              matrix[i - 1][j - 1] + 1, // استبدال
-              matrix[i][j - 1] + 1, // إدخال
-              matrix[i - 1][j] + 1 // حذف
-            );
-          }
-        }
-      }
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1]; // لا تغيير
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1, // استبدال
+              matrix[i][j - 1] + 1, // إدخال
+              matrix[i - 1][j] + 1 // حذف
+            );
+          }
+        }
+      }
 
-      return matrix[b.length][a.length];
-    }
-    // *******************************************************************
-
-
-    const urlInput = document.getElementById('urlInput');
-    const scanButton = document.getElementById('scanButton');
-    const resultBox = document.getElementById('resultBox');
-
-    scanButton.addEventListener('click', handleScan);
-
-    function parseUrl(url) {
-        try {
-            const link = url.startsWith('http') ? url : `http://${url}`;
-            const parsed = new URL(link);
-            return {
-                fullUrl: url,
-                protocol: parsed.protocol.replace(':', ''),
-                domain: parsed.hostname,
-                length: url.length,
-                isHttps: parsed.protocol === 'https:',
-                isShortened: /bit\.ly|t\.co|tinyurl|goo\.gl|cutt\.ly|cli\.gs|t\.ly/i.test(url)
-            };
-        } catch (e) {
-            return null;
-        }
-    }
-
-    async function handleScan() {
-        const url = urlInput.value.trim();
-
-        if (!url) {
-            alert('الرجاء إدخال رابط للفحص');
-            return;
-        }
-
-        const urlDetails = parseUrl(url);
-
-        if (!urlDetails) {
-            alert('صيغة الرابط غير صحيحة.');
-            return;
-        }
-
-        scanButton.disabled = true;
-        scanButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحليل...';
-        resultBox.style.display = 'none';
-
-        // ---------------------------------------------------------------------------------
-        // *** 🔴 المنطقة الحرجة: منطق الفحص القوي (محاكاة/دمج Rork) 🔴 ***
-        // ---------------------------------------------------------------------------------
-
-        let securityLevel = 'safe'; 
-        let suspiciousPatterns = [];
-        
-        // ********** هذا الجزء يمثل قوة فحص مشروعك الآن **********
-
-        // القائمة الموسعة للنطاقات الآمنة جداً (UltraSafe Domains)
-        const ultraSafeDomains = [
-            'google.com', 'youtube.com', 'facebook.com', 'twitter.com', 'instagram.com', 
-            'tiktok.com', 'apple.com', 'amazon.com', 'whatsapp.com', 'github.com', 'microsoft.com',
-            'speedtest.net', 'wikipedia.org', 'linkedin.com', 'reddit.com', 'cisco.com', 
-            'bing.com', 'yahoo.com', 'netflix.com', 'spotify.com', 'paypal.com', 'ebay.com',
-            'adobe.com', 'oracle.com', 'ibm.com', 'samsung.com', 'huawei.com', 'dell.com',
-            'hp.com', 'alipay.com', 'tencent.com', 'baidu.com', 'weibo.com', 'vk.com',
-            'gov.sa', 'edu.sa', 'saudibanks.sa', 'stc.com.sa', 'mobily.com.sa', 'zeker.sa', 
-            'absher.sa', 'elm.sa', 'mof.gov.sa', 'cma.org.sa', 'sama.gov.sa', 'moe.gov.sa'
-        ];
-        
-        const domainToCheck = urlDetails.domain.toLowerCase();
-        const cleanDomain = domainToCheck.startsWith('www.') ? domainToCheck.substring(4) : domainToCheck;
-        
-        const isUltraSafe = ultraSafeDomains.some(d => cleanDomain === d);
+      return matrix[b.length][a.length];
+    }
+    // *******************************************************************
 
 
-        // 1. فحص البروتوكول (HTTP غير مشفر يعتبر مؤشر خطر كافٍ)
-        if (urlDetails.protocol === 'http') {
-            suspiciousPatterns.push('الرابط غير مشفّر (HTTP) ويسهل اعتراض بياناته. **(خطر عالي)**');
-        }
+    const urlInput = document.getElementById('urlInput');
+    const scanButton = document.getElementById('scanButton');
+    const resultBox = document.getElementById('resultBox');
 
-        // 2. فحص الاختصار (يعتبر مؤشر خطر كافٍ لوحده)
-        if (urlDetails.isShortened) {
-            suspiciousPatterns.push('الرابط مُختصر، مما يُصعّب التحقق من الوجهة النهائية. **(خطر عالي)**');
-        }
+    scanButton.addEventListener('click', handleScan);
 
-        // 3. فحص الكلمات المفتاحية الشائعة في الاحتيال والبرامج الضارة (Phishing/Malware)
-        const suspiciousWords = ['scam', 'login-verify', 'free-soft', 'update-now', 'payment-failed', 'security-alert', 'download-exe', 'account-sync', 'support-fix'];
-        const lowerCaseUrl = url.toLowerCase();
-        
-        suspiciousWords.forEach(word => {
-            if (lowerCaseUrl.includes(word)) {
-                suspiciousPatterns.push(`الرابط يحتوي على كلمة مفتاحية مشبوهة: "${word}".`);
-            }
-        });
+    function parseUrl(url) {
+        try {
+            const link = url.startsWith('http') ? url : `http://${url}`;
+            const parsed = new URL(link);
+            return {
+                fullUrl: url,
+                protocol: parsed.protocol.replace(':', ''),
+                domain: parsed.hostname,
+                length: url.length,
+                isHttps: parsed.protocol === 'https:',
+                isShortened: /bit\.ly|t\.co|tinyurl|goo\.gl|cutt\.ly|cli\.gs|t\.ly/i.test(url)
+            };
+        } catch (e) {
+            return null;
+        }
+    }
 
-        // 4. *** قاعدة التلاعب بالنطاق (Typosquatting) القصوى ***
-        // هذه القاعدة يجب أن تكون حساسة جداً لتلبية السيناريو الذي ذكرته (speeedtest.net)
-        let isTyposquattingDetected = false;
+    async function handleScan() {
+        const url = urlInput.value.trim();
 
-        for (const safeDomain of ultraSafeDomains) {
-            const tldIndex = cleanDomain.lastIndexOf('.');
-            const nameToCheck = tldIndex > 0 ? cleanDomain.substring(0, tldIndex) : cleanDomain;
-            
-            const safeTldIndex = safeDomain.lastIndexOf('.');
-            const safeName = safeTldIndex > 0 ? safeDomain.substring(0, safeTldIndex) : safeDomain;
-            
-            const distance = getEditDistance(nameToCheck, safeName);
+        if (!url) {
+            alert('الرجاء إدخال رابط للفحص');
+            return;
+        }
 
-            // الشرط الحاسم: إذا كان الاختلاف حرف واحد (مسافة = 1)، فإنه خطر بنسبة 100%
-            if (distance === 1) { 
-                suspiciousPatterns.push(`النطاق قريب جداً من نطاق مشهور (${safeDomain}) باختلاف حرف واحد، وهو مؤشر قوي على التلاعب بالنطاق (Typosquatting).`);
-                isTyposquattingDetected = true;
-                securityLevel = 'danger'; // يتم تعيينه كخطر فوري لزيادة القوة
-                break; 
-            }
-        }
+        const urlDetails = parseUrl(url);
 
+        if (!urlDetails) {
+            alert('صيغة الرابط غير صحيحة.');
+            return;
+        }
 
-        // 5. *** قاعدة الاشتباه العام بالنطاقات غير المدرجة (تغطية كل الروابط الأخرى) ***
-        if (!isUltraSafe && !isTyposquattingDetected) { 
-            const domainNoTLD = cleanDomain.substring(0, cleanDomain.lastIndexOf('.'));
-            const digitCount = (domainNoTLD.match(/\d/g) || []).length;
-            const hyphenCount = (domainNoTLD.match(/-/g) || []).length;
+        scanButton.disabled = true;
+        scanButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحليل...';
+        resultBox.style.display = 'none';
 
-            if (digitCount > 0) {
-                suspiciousPatterns.push('النطاق يحتوي على أرقام في الاسم، وهي علامة شائعة في نطاقات الاحتيال غير المعروفة.');
-            }
-            
-            if (hyphenCount > 0) {
-                 suspiciousPatterns.push('النطاق يحتوي على شرطات (-)، وهي علامة شائعة في نطاقات الاحتيال لإخفاء الكلمات.');
-            }
-            
-            if (cleanDomain.length > 35) {
-                 suspiciousPatterns.push('النطاق الأساسي طويل جداً (أكثر من 35 حرفاً).');
-            }
-        }
+        // ---------------------------------------------------------------------------------
+        // *** 🔴 المنطقة الحرجة: منطق الفحص القوي (محاكاة/دمج Rork) 🔴 ***
+        // ---------------------------------------------------------------------------------
 
-        
-        // 6. قاعدة فحص بصمة المعاملات (لروابط جوجل الطويلة - لسيناريو سيسكو الأول)
-        if (domainToCheck.includes('google.com') && url.includes('/aclk?')) {
-            const safeLinkSegment = 'DChsSEwj58NSUhtuQAxXdf0ECHWxODQkYACICCAEQARoCd3M';
-            
-            const startAnchor = url.indexOf('?sa=L&ai=');
-            const endAnchor = url.indexOf('&co=1'); 
-            
-            if (startAnchor !== -1 && endAnchor !== -1 && endAnchor > startAnchor) {
-                const userLinkSegment = url.substring(startAnchor + 9, endAnchor);
+        let securityLevel = 'safe'; 
+        let suspiciousPatterns = [];
+        
+        // ********** هذا الجزء يمثل قوة فحص مشروعك الآن **********
 
-                const distance = getEditDistance(safeLinkSegment, userLinkSegment);
-
-                if (distance > 3) { 
-                    suspiciousPatterns.push('تم الكشف عن تلاعب كبير في معاملات التتبع (Tracking Parameters) على نطاق Google آمن. **(خطر التلاعب بالبصمة)**');
-                    securityLevel = 'danger'; // يتم تعيينه كخطر فوري لزيادة القوة
-                }
-            }
-        }
-        
-        // 7. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في مسار رابط آمن)
-        if (isUltraSafe) {
-            if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('search?q=') && !url.includes('google.com/search')) {
-                suspiciousPatterns.push('الرابط معروف (نطاق آمن) ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي أو تتبع.');
-            }
-        }
-        
-        // 8. اختبار الكشف عن رابط EICAR
-        if (url.includes('wicar.org')) {
-            securityLevel = 'danger';
-            suspiciousPatterns.push('تم الكشف عن هذا الرابط كملف اختبار ضار (EICAR).');
-        }
-
-        // 9. القرار النهائي: أي مؤشر خطر واحد يعني "خطر"
-        if (securityLevel === 'danger' || suspiciousPatterns.length >= 1) {
-            securityLevel = 'danger';
-        } else {
-            securityLevel = 'safe';
-        } 
-        
-        // ********** نهاية منطق قوة فحص مشروعك **********
-
-        // ---------------------------------------------------------------------------------
-        
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // القائمة الموسعة للنطاقات الآمنة جداً (UltraSafe Domains)
+        const ultraSafeDomains = [
+            'google.com', 'youtube.com', 'facebook.com', 'twitter.com', 'instagram.com', 
+            'tiktok.com', 'apple.com', 'amazon.com', 'whatsapp.com', 'github.com', 'microsoft.com',
+            'speedtest.net', 'wikipedia.org', 'linkedin.com', 'reddit.com', 'cisco.com', 
+            'bing.com', 'yahoo.com', 'netflix.com', 'spotify.com', 'paypal.com', 'ebay.com',
+            'adobe.com', 'oracle.com', 'ibm.com', 'samsung.com', 'huawei.com', 'dell.com',
+            'hp.com', 'alipay.com', 'tencent.com', 'baidu.com', 'weibo.com', 'vk.com',
+            'gov.sa', 'edu.sa', 'saudibanks.sa', 'stc.com.sa', 'mobily.com.sa', 'zeker.sa', 
+            'absher.sa', 'elm.sa', 'mof.gov.sa', 'cma.org.sa', 'sama.gov.sa', 'moe.gov.sa'
+        ];
+        
+        const domainToCheck = urlDetails.domain.toLowerCase();
+        const cleanDomain = domainToCheck.startsWith('www.') ? domainToCheck.substring(4) : domainToCheck;
+        
+        const isUltraSafe = ultraSafeDomains.some(d => cleanDomain === d);
 
 
-        displayResult(securityLevel, urlDetails, suspiciousPatterns);
-        scanButton.disabled = false;
-        scanButton.innerHTML = '<i class="fas fa-search"></i> فحص متقدم';
-    }
+        // 1. فحص البروتوكول (HTTP غير مشفر يعتبر مؤشر خطر كافٍ)
+        if (urlDetails.protocol === 'http') {
+            suspiciousPatterns.push('الرابط غير مشفّر (HTTP) ويسهل اعتراض بياناته. **(خطر عالي)**');
+        }
 
-    function displayResult(level, details, patterns) {
-        resultBox.className = 'result-box';
-        resultBox.classList.add(level);
-        
-        let iconHtml;
-        let statusText;
+        // 2. فحص الاختصار (يعتبر مؤشر خطر كافٍ لوحده)
+        if (urlDetails.isShortened) {
+            suspiciousPatterns.push('الرابط مُختصر، مما يُصعّب التحقق من الوجهة النهائية. **(خطر عالي)**');
+        }
 
-        if (level === 'safe') {
-            iconHtml = '<i class="fas fa-check-circle"></i>';
-            statusText = 'آمن تماماً';
-        } else {
-            iconHtml = '<i class="fas fa-exclamation-triangle"></i>';
-            statusText = 'خطر / مشبوه';
-        }
-        
-        let warningsHtml = '';
-        if (patterns.length > 0) {
-            const listItems = patterns.map(p => `<li>${p}</li>`).join('');
-            warningsHtml = `
-                <div class="warnings-list">
-                    <p class="warnings-title">🔴 تم اكتشاف (${patterns.length}) مؤشر خطر:</p>
-                    <ul>${listItems}</ul>
-                </div>
-            `;
-        }
-
-        resultBox.innerHTML = `
-            <div class="result-header">
-                ${iconHtml}
-                <span class="result-status">${statusText}</span>
-            </div>
-            <p class="result-url">${details.fullUrl}</p>
-
-            <div class="details-grid">
-                <div class="detail-item">
-                    <span class="detail-label">البروتوكول:</span>
-                    <span class="detail-value" style="color: ${details.isHttps ? '#059669' : '#DC2626'};">${details.protocol.toUpperCase()}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">النطاق:</span>
-                    <span class="detail-value" dir="ltr">${details.domain}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">طول الرابط:</span>
-                    <span class="detail-value">${details.length} حرف</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">اختصار الرابط:</span>
-                    <span class="detail-value" style="color: ${details.isShortened ? '#F59E0B' : '#059669'};">${details.isShortened ? 'نعم (مشبوه)' : 'لا'}</span>
-                </div>
-            </div>
-
-            ${warningsHtml}
-        `;
-        resultBox.style.display = 'block';
-    }
-</script>
-
-</body>
-</html>
+        // 3. فحص الكلمات المفتاحية الشائعة في الاحتيال والبرامج الضارة (Phishing/Malware)
+        const suspiciousWords = ['scam', 'login-verify', 'free-soft', 'update-now', 'payment-failed', 'security-alert', 'download-exe', 'account-sync', 'support-fix'];
+        const lowerCaseUrl = url.toLowerCase();
+        
+        suspiciousWords.forEach(
