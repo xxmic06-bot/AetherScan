@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AetherScan - فاحص الروابط النهائي الأكثر حساسية</title>
+    <title>AetherScan - فاحص الروابط الأكثر حساسية</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         /* (*** الأنماط CSS كما هي دون تغيير ***) */
@@ -23,7 +23,7 @@
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
         }
         h1 {
-            color: #DC2626; 
+            color: #DC2626; /* جعل العنوان أحمر ليعكس الحساسية القصوى */
             font-size: 2.5em;
             font-weight: 800;
         }
@@ -52,7 +52,7 @@
             outline: none;
         }
         #scanButton {
-            background-color: #DC2626; 
+            background-color: #DC2626; /* زر بلون الخطر */
             color: white;
             border: none;
             padding: 0 30px;
@@ -242,15 +242,12 @@
     function parseUrl(url) {
         try {
             // إضافة https:// افتراضياً لتحليل الروابط دون بروتوكول
-            const link = url.startsWith('http') ? url : `https://${url}`;
+            const link = url.startsWith('http') ? url : https://${url};
             const parsed = new URL(link);
             return {
                 fullUrl: url,
                 protocol: parsed.protocol.replace(':', ''),
                 domain: parsed.hostname,
-                path: parsed.pathname + parsed.search + parsed.hash, // الحصول على المسار بالكامل
-                pathname: parsed.pathname,
-                query: parsed.search + parsed.hash,
                 length: url.length,
                 isHttps: parsed.protocol === 'https:',
                 isShortened: /bit\.ly|t\.co|tinyurl|goo\.gl|cutt\.ly|cli\.gs|t\.ly/i.test(url)
@@ -291,17 +288,12 @@
         // القائمة الموسعة للنطاقات الآمنة جداً (UltraSafe Domains)
         const ultraSafeDomains = [
             'google.com', 'youtube.com', 'facebook.com', 'twitter.com', 'instagram.com', 
-            'tiktok.com', 'apple.com', 'samsung.com', 'huawei.com', 'amazon.sa', 'amazon.com', 
-            'whatsapp.com', 'github.com', 'microsoft.com', 'speedtest.net', 'wikipedia.org', 
-            'linkedin.com', 'reddit.com', 'cisco.com', 'bing.com', 'yahoo.com', 'netflix.com', 
-            'paypal.com', 'ebay.com', 'adobe.com', 'oracle.com', 'ibm.com', 'dell.com', 'hp.com',
-            'alipay.com', 'tencent.com', 'baidu.com', 'weibo.com', 'vk.com',
-            
-            // مواقع حكومية وتعليمية وخدمية سعودية موسعة ومطلوبة
+            'tiktok.com', 'apple.com', 'amazon.com', 'whatsapp.com', 'github.com', 'microsoft.com',
+            'speedtest.net', 'wikipedia.org', 'linkedin.com', 'reddit.com', 'cisco.com', 
+            'bing.com', 'yahoo.com', 'netflix.com', 'spotify.com', 'paypal.com', 'ebay.com',
+            'adobe.com', 'oracle.com', 'ibm.com', 'samsung.com', 'dell.com', 'hp.com',
             'gov.sa', 'edu.sa', 'saudibanks.sa', 'stc.com.sa', 'mobily.com.sa', 'zeker.sa', 
-            'absher.sa', 'elm.sa', 'mof.gov.sa', 'cma.org.sa', 'sama.gov.sa', 'moe.gov.sa',
-            'kfupm.edu.sa', 'ksu.edu.sa', 'tuwaiq.edu.sa', 'mcit.gov.sa', 'nic.gov.sa', 
-            'yesser.gov.sa', 'saudi.gov.sa', 'tvtc.gov.sa', 'tvtclms.edu.sa'
+            'absher.sa', 'elm.sa', 'mof.gov.sa', 'cma.org.sa', 'sama.gov.sa', 'moe.gov.sa'
         ];
         
         const domainToCheck = urlDetails.domain.toLowerCase();
@@ -312,12 +304,12 @@
 
         // 1. فحص البروتوكول (HTTP غير مشفر يعتبر مؤشر خطر كافٍ)
         if (urlDetails.protocol === 'http') {
-            suspiciousPatterns.push('الرابط غير مشفّر (HTTP) ويسهل اعتراض بياناته. **(خطر عالي)**');
+            suspiciousPatterns.push('الرابط غير مشفّر (HTTP) ويسهل اعتراض بياناته. *(خطر عالي)*');
         }
 
         // 2. فحص الاختصار (يعتبر مؤشر خطر كافٍ لوحده)
         if (urlDetails.isShortened) {
-            suspiciousPatterns.push('الرابط مُختصر، مما يُصعّب التحقق من الوجهة النهائية. **(خطر عالي)**');
+            suspiciousPatterns.push('الرابط مُختصر، مما يُصعّب التحقق من الوجهة النهائية. *(خطر عالي)*');
         }
 
         // 3. فحص الكلمات المفتاحية الشائعة في الاحتيال والبرامج الضارة (Phishing/Malware)
@@ -326,13 +318,13 @@
         
         suspiciousWords.forEach(word => {
             if (lowerCaseUrl.includes(word)) {
-                suspiciousPatterns.push(`الرابط يحتوي على كلمة مفتاحية مشبوهة: "${word}".`);
+                suspiciousPatterns.push(الرابط يحتوي على كلمة مفتاحية مشبوهة: "${word}".);
             }
         });
 
         // 4. *** قاعدة التلاعب بالنطاق القصوى + الاشتباه العام ***
         
-        // 4-أ. فحص التلاعب بالنطاق (Typosquatting) - يكشف تغيير حرف في النطاقات المطلوبة
+        // 4-أ. فحص التلاعب بالنطاق (Typosquatting)
         let isTyposquattingDetected = false;
 
         for (const safeDomain of ultraSafeDomains) {
@@ -346,21 +338,24 @@
 
             // الشرط الحاسم: إذا كان الاختلاف حرف واحد (مسافة = 1)، فإنه خطر بنسبة 100%
             if (distance === 1) { 
-                suspiciousPatterns.push(`النطاق قريب جداً من نطاق مشهور (${safeDomain}) باختلاف حرف واحد، وهو مؤشر قاطع على التلاعب بالنطاق (Typosquatting).`);
+                suspiciousPatterns.push(النطاق قريب جداً من نطاق مشهور (${safeDomain}) باختلاف حرف واحد، وهو مؤشر قاطع على التلاعب بالنطاق (Typosquatting).);
                 isTyposquattingDetected = true;
                 securityLevel = 'danger'; 
                 break; 
             }
         }
 
-        // 4-ب. *** القاعدة الحاسمة: أي نطاق غير مطابق بالضبط يعتبر مشبوهًا ***
+        // 4-ب. *** القاعدة الجديدة والحاسمة: أي نطاق غير مطابق بالضبط يعتبر مشبوهًا ***
+        // إذا لم يكن النطاق مطابقاً تماماً لأحد النطاقات الآمنة في القائمة
         if (!isExactMatch) { 
              const domainNoTLD = cleanDomain.substring(0, cleanDomain.lastIndexOf('.'));
              const digitCount = (domainNoTLD.match(/\d/g) || []).length;
              const hyphenCount = (domainNoTLD.match(/-/g) || []).length;
              const suspiciousChars = /[^a-z0-9-.]/.test(cleanDomain);
 
+             // إذا لم يتم اكتشاف التلاعب المباشر (4-أ) لكنه ليس مطابقاً
              if (!isTyposquattingDetected) {
+                // نرفع درجة الاشتباه بشكل عام لأي نطاق غير معروف 
                 if (digitCount > 0) {
                     suspiciousPatterns.push('النطاق غير معروف ويحتوي على أرقام في الاسم.');
                 }
@@ -374,49 +369,41 @@
                 }
              }
 
+             // الكشف عن رموز غير مسموحة (مثل الرموز المضللة - Punycode characters)
              if (suspiciousChars) {
                  suspiciousPatterns.push('تم الكشف عن رموز أو أحرف غير قياسية في النطاق (قد تكون رموز Punycode أو Unicode للتضليل).');
              }
 
-             // جعل أي نطاق غير مطابق بالضبط مشبوهًا لوجود أي علامة
+             // *** القاعدة المطلوبة: جعل أي نطاق غير مطابق بالضبط مشبوهًا لوجود أي علامة ***
              if (suspiciousPatterns.length > 0) {
                 securityLevel = 'danger'; 
              }
         }
         
-        // 5. *** قاعدة فحص بصمة المعاملات (Google ACLK - حساسية فائقة للمسار الطويل) ***
+        // 5. قاعدة فحص بصمة المعاملات (لروابط جوجل الطويلة)
         if (domainToCheck.includes('google.com') && url.includes('/aclk?')) {
-            // هذا الجزء هو الحساسية الزائدة على الروابط الطويلة المطلوبة
-            if (urlDetails.path.length < 50 || urlDetails.path.length > 700) {
-                 suspiciousPatterns.push('طول مسار التتبع على Google غير طبيعي (إضافة أو حذف كبير في البصمة).');
-                 securityLevel = 'danger';
-            }
+            const safeLinkSegment = 'DChsSEwj58NSUhtuQAxXdf0ECHWxODQkYACICCAEQARoCd3M';
             
-            if (urlDetails.path.includes('//') || urlDetails.path.includes('..') || !urlDetails.path.includes('&sig=')) {
-                suspiciousPatterns.push('تم الكشف عن رموز غير مألوفة أو مفقود جزء التوقيع (&sig) في مسار التتبع الطويل.');
-                 securityLevel = 'danger';
+            const startAnchor = url.indexOf('?sa=L&ai=');
+            const endAnchor = url.indexOf('&co=1'); 
+            
+            if (startAnchor !== -1 && endAnchor !== -1 && endAnchor > startAnchor) {
+                const userLinkSegment = url.substring(startAnchor + 9, endAnchor);
+
+                const distance = getEditDistance(safeLinkSegment, userLinkSegment);
+
+                if (distance > 3) { 
+                    suspiciousPatterns.push('تم الكشف عن تلاعب كبير في معاملات التتبع (Tracking Parameters) على نطاق Google آمن. *(خطر التلاعب بالبصمة)*');
+                    securityLevel = 'danger'; 
+                }
             }
         }
         
-        // 6. *** قاعدة فحص حساسية المسار (ABSHER, TVTC, AMAZON) ***
-        // هذه القاعدة تضمن أن أي تغيير في المسار (مثل / / . -) يعتبر مؤشر خطر
-        if (isExactMatch && urlDetails.path !== '/') {
-            const path = urlDetails.path;
-            
-            // المسارات الطويلة بشكل غير طبيعي على النطاقات الآمنة
-            if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('/aclk?')) {
-                // استبعاد روابط جوجل الطويلة العادية التي تم فحصها في النقطة 5
-                suspiciousPatterns.push('الرابط معروف (نطاق آمن) ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي أو تتبع.');
-            }
-
-            // فحص وجود تلاعب في المسارات (مثل استخدام رموز غير طبيعية)
-            if (path.includes('../') || path.includes('//')) {
-                suspiciousPatterns.push('المسار يحتوي على رموز غير عادية (مثل // أو ../) تستخدم في هجمات المسارات.');
-            }
-
-            // إذا أظهر المسار أي من هذه العلامات، يرتفع مستوى الخطر
-            if (suspiciousPatterns.some(p => p.includes('المسار يحتوي') || p.includes('رموز غير عادية'))) {
-                securityLevel = 'danger';
+        // 6. فحص التلاعب بالمسارات (زيادة أو نقصان عشوائي في مسار رابط آمن)
+        // هذا الفحص يكتشف التلاعب في مسارات النطاقات الآمنة (مثل إضافة /virus-scan إلى youtube.com)
+        if (isExactMatch) {
+            if (urlDetails.length > 80 && !url.includes('watch?v=') && !url.includes('search?q=') && !url.includes('google.com/search')) {
+                suspiciousPatterns.push('الرابط مطابق لنطاق آمن ولكنه طويل بشكل غير طبيعي، قد يدل على محاولة إخفاء مسار احتيالي.');
             }
         }
         
@@ -430,6 +417,7 @@
         if (securityLevel === 'danger' || suspiciousPatterns.length >= 1) {
             securityLevel = 'danger';
         } else {
+            // هذا يعني أن الرابط مطابق 100% لأحد الـ ultraSafeDomains ولا يحتوي على أي مؤشر خطر آخر.
             securityLevel = 'safe'; 
         } 
         
@@ -462,7 +450,7 @@
         
         let warningsHtml = '';
         if (patterns.length > 0) {
-            const listItems = patterns.map(p => `<li>${p}</li>`).join('');
+            const listItems = patterns.map(p => <li>${p}</li>).join('');
             warningsHtml = `
                 <div class="warnings-list">
                     <p class="warnings-title">🔴 تم اكتشاف (${patterns.length}) مؤشر خطر:</p>
